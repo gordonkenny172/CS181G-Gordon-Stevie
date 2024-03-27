@@ -1,0 +1,8 @@
+[workspace]
+
+members = [
+    "adventure",
+    "engine",
+    "fighter",
+    "puzzle"
+]

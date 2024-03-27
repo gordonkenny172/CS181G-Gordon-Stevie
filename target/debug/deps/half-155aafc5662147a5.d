@@ -1,0 +1,13 @@
+/Users/skim/VSCode/cs181G/CS181G-Gordon-Stevie/target/debug/deps/libhalf-155aafc5662147a5.rmeta: /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/lib.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/bfloat.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/bfloat/convert.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/binary16.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/binary16/arch.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/binary16/arch/aarch64.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/leading_zeros.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/slice.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/vec.rs
+
+/Users/skim/VSCode/cs181G/CS181G-Gordon-Stevie/target/debug/deps/half-155aafc5662147a5.d: /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/lib.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/bfloat.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/bfloat/convert.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/binary16.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/binary16/arch.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/binary16/arch/aarch64.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/leading_zeros.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/slice.rs /Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/vec.rs
+
+/Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/lib.rs:
+/Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/bfloat.rs:
+/Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/bfloat/convert.rs:
+/Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/binary16.rs:
+/Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/binary16/arch.rs:
+/Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/binary16/arch/aarch64.rs:
+/Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/leading_zeros.rs:
+/Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/slice.rs:
+/Users/skim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/half-2.4.0/src/vec.rs:
