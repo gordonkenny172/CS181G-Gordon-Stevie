@@ -588,6 +588,7 @@ name = "fighter"
 version = "0.1.0"
 dependencies = [
  "assets_manager",
+ "bytemuck",
  "frenderer",
  "getrandom",
  "image",
