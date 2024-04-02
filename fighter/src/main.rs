@@ -127,10 +127,65 @@ const KNOCKBACK_TIME: f32 = 0.25;
 
 const DT: f32 = 1.0 / 60.0;
 
+//necessary structs and functions for collision detection
+struct Contact {
+    a_i: usize,
+    a_r: Rect,
+    b_i: usize,
+    b_r: Rect,
+    displacement: Vec2,
+}
+
+fn gather_contacts(objs: &Vec<Rect>, level: &Level) -> Vec<Contact> {
+    let mut contacts: Vec<Contact> = Vec::new();
+
+    for (a_idx, a_rect) in objs.iter().enumerate() {
+        for (b_idx, (b_rect, tile_data)) in level.tiles_within(*a_rect).enumerate() {
+            if tile_data.solid {
+                if let Some(overlap) = a_rect.overlap(b_rect) {
+                    contacts.push(Contact {
+                        a_i: a_idx,
+                        a_r: *a_rect,
+                        b_i: b_idx,
+                        b_r: b_rect,
+                        displacement: overlap,
+                    });
+                }
+            }
+        }
+    }
+    contacts
+}
+
+impl Game {
+    fn do_collision_response(&mut self, contacts: &mut Vec<Contact>) {
+        for (contact) in contacts.iter_mut() {
+            if contact.displacement.x < contact.displacement.y {
+                contact.displacement.y = 0.0;
+            } else {
+                contact.displacement.x = 0.0;
+            }
+
+            let b_pos = contact.b_r.rect_to_pos();
+
+            if let Some(entity) = self.entities.get_mut(contact.a_i) {
+                if entity.pos.x < b_pos.x {
+                    contact.displacement.x *= -1.0;
+                }
+                if entity.pos.y < b_pos.y {
+                    contact.displacement.y *= -1.0;
+                }
+
+                entity.pos += contact.displacement;
+            }
+        }
+    }
+}
+
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]
-    let source =
-        assets_manager::source::FileSystem::new("fighter/content").expect("Couldn't load resources");
+    let source = assets_manager::source::FileSystem::new("fighter/content")
+        .expect("Couldn't load resources");
     #[cfg(target_arch = "wasm32")]
     let source = assets_manager::source::Embedded::from(assets_manager::source::embed!("content"));
     let cache = assets_manager::AssetCache::with_source(source);
@@ -363,5 +418,20 @@ impl Game {
             }
             enemy.pos += enemy.dir.to_vec2() * ENEMY_SPEED * DT;
         }
+
+        //Collision Detection & Response:
+        let rects: Vec<Rect> = self
+            .entities
+            .iter()
+            .map(|entity| entity.rect())
+            .collect();
+        let mut contacts: Vec<Contact> = gather_contacts(&rects, self.level());
+        contacts.sort_by(|a, b| {
+            b.displacement
+                .mag_sq()
+                .partial_cmp(&a.displacement.mag_sq())
+                .unwrap()
+        });
+        self.do_collision_response(&mut contacts);
     }
 }
