@@ -136,17 +136,6 @@ struct Contact {
     displacement: Vec2,
 }
 
-impl Vec2 {
-    fn vec2_to_rect(self) -> Rect {
-        Rect {
-            x: self.x - (TILE_SZ / 2) as f32,
-            y: self.y - (TILE_SZ / 2) as f32,
-            w: TILE_SZ as u16,
-            h: TILE_SZ as u16,
-        }
-    }
-}
-
 fn gather_contacts(objs: &Vec<Rect>, level: &Level) -> Vec<Contact> {
     let mut contacts: Vec<Contact> = Vec::new();
 
@@ -170,7 +159,7 @@ fn gather_contacts(objs: &Vec<Rect>, level: &Level) -> Vec<Contact> {
 
 impl Game {
     fn do_collision_response(&mut self, contacts: &mut Vec<Contact>) {
-        for (c_idx, contact) in contacts.iter_mut().enumerate() {
+        for (contact) in contacts.iter_mut() {
             if contact.displacement.x < contact.displacement.y {
                 contact.displacement.y = 0.0;
             } else {
@@ -434,7 +423,7 @@ impl Game {
         let rects: Vec<Rect> = self
             .entities
             .iter()
-            .map(|entity| entity.pos.vec2_to_rect())
+            .map(|entity| entity.rect())
             .collect();
         let mut contacts: Vec<Contact> = gather_contacts(&rects, self.level());
         contacts.sort_by(|a, b| {
