@@ -13,6 +13,8 @@ cargo:rerun-if-env-changed=CC_ENABLE_DEBUG_OUTPUT
 cargo:rerun-if-env-changed=CRATE_CC_NO_DEFAULTS
 CRATE_CC_NO_DEFAULTS = None
 DEBUG = Some("true")
+cargo:warning=xcrun: error: unable to lookup item 'PlatformVersion' from command line tools installation
+cargo:warning=xcrun: error: unable to lookup item 'PlatformVersion' in SDK '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk'
 cargo:rerun-if-env-changed=CFLAGS_aarch64-apple-darwin
 CFLAGS_aarch64-apple-darwin = None
 cargo:rerun-if-env-changed=CFLAGS_aarch64_apple_darwin
@@ -38,4 +40,4 @@ HOST_ARFLAGS = None
 cargo:rerun-if-env-changed=ARFLAGS
 ARFLAGS = None
 cargo:rustc-link-lib=static=exception
-cargo:rustc-link-search=native=/Users/skim/VSCode/cs181G/CS181G-Gordon-Stevie/target/debug/build/objc_exception-2f465e716c7e440b/out
+cargo:rustc-link-search=native=/Users/z/Desktop/180 project/CS181G-Gordon-Stevie/target/debug/build/objc_exception-2f465e716c7e440b/out
