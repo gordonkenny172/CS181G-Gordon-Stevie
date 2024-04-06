@@ -383,7 +383,6 @@ impl Game {
             dy = -delta.y * KNOCKBACK_SPEED * dt;
             dx2 = -delta.x * KNOCKBACK_SPEED * dt;
             dy2 = -delta.y * KNOCKBACK_SPEED * dt;
-           
         } else {
             if dx > 0.0 {
                 self.entities[0].dir = Dir::E;
@@ -442,11 +441,7 @@ impl Game {
         }
 
         //Collision Detection & Response:
-        let rects: Vec<Rect> = self
-            .entities
-            .iter()
-            .map(|entity| entity.rect())
-            .collect();
+        let rects: Vec<Rect> = self.entities.iter().map(|entity| entity.rect()).collect();
         let mut contacts: Vec<Contact> = gather_contacts(&rects, self.level());
         contacts.sort_by(|a, b| {
             b.displacement
