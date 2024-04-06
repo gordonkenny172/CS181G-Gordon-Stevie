@@ -367,15 +367,23 @@ impl Game {
         let mut dx = input.key_axis(Key::ArrowLeft, Key::ArrowRight) * PLAYER_SPEED * DT;
         // now down means -y and up means +y!  beware!
         let mut dy = input.key_axis(Key::ArrowDown, Key::ArrowUp) * PLAYER_SPEED * DT;
+        let mut dx2 = input.key_axis(Key::KeyA, Key::KeyD) * PLAYER_SPEED * DT;
+        // now down means -y and up means +y!  beware!
+        let mut dy2 = input.key_axis(Key::KeyW, Key::KeyS) * PLAYER_SPEED * DT;
         let attacking = !self.attack_area.is_empty();
         let knockback = self.knockback_timer > 0.0;
         if attacking {
             dx = 0.0;
             dy = 0.0;
+            dx2 = 0.0;
+            dy2 = 0.0;
         } else if knockback {
             let delta = self.entities[0].dir.to_vec2();
             dx = -delta.x * KNOCKBACK_SPEED * dt;
             dy = -delta.y * KNOCKBACK_SPEED * dt;
+            dx2 = -delta.x * KNOCKBACK_SPEED * dt;
+            dy2 = -delta.y * KNOCKBACK_SPEED * dt;
+           
         } else {
             if dx > 0.0 {
                 self.entities[0].dir = Dir::E;
@@ -388,6 +396,18 @@ impl Game {
             }
             if dy < 0.0 {
                 self.entities[0].dir = Dir::S;
+            }
+            if dx2 > 0.0 {
+                self.entities[1].dir = Dir::E;
+            }
+            if dx2 < 0.0 {
+                self.entities[1].dir = Dir::W;
+            }
+            if dy2 > 0.0 {
+                self.entities[1].dir = Dir::N;
+            }
+            if dy2 < 0.0 {
+                self.entities[1].dir = Dir::S;
             }
         }
         if self.attack_timer <= 0.0 && input.is_key_pressed(Key::Space) {
@@ -404,7 +424,9 @@ impl Game {
             };
         }
         let dest = self.entities[0].pos + Vec2 { x: dx, y: dy };
+        let dest2 = self.entities[1].pos + Vec2 { x: dx2, y: dy2 };
         self.entities[0].pos = dest;
+        self.entities[1].pos = dest;
         let mut rng = rand::thread_rng();
         for enemy in self.entities[1..].iter_mut() {
             if rng.gen_bool(0.05) {
