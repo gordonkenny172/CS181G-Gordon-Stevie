@@ -13,6 +13,7 @@ use geom::*;
 enum EntityType {
     Player,
     Enemy,
+    Projectile,
     // which level, grid x in dest level, grid y in dest level
     #[allow(dead_code)]
     Door(String, u16, u16),
@@ -52,7 +53,7 @@ const ENEMY: [SheetRegion; 4] = [
     SheetRegion::rect(533, 39, 16, 16),
     SheetRegion::rect(533 + 16 * 3, 39, 16, 16),
 ];
-
+const PROJECTILE: SheetRegion = SheetRegion::rect(525, 19, 7, 7);
 const HEART: SheetRegion = SheetRegion::rect(525, 35, 8, 8);
 
 impl Dir {
@@ -93,6 +94,7 @@ impl Entity {
         match self.etype {
             EntityType::Player => PLAYER[self.dir as usize],
             EntityType::Enemy => ENEMY[self.dir as usize],
+            EntityType::Projectile => PROJECTILE,
             _ => panic!("can't draw doors"),
         }
         .with_depth(1)
@@ -328,6 +330,7 @@ impl Game {
                     dir: Dir::S,
                     etype: etype.clone(),
                 }),
+                EntityType::Projectile => {}
             }
         }
     }
