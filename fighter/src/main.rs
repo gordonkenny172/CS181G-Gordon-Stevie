@@ -113,8 +113,8 @@ struct Game {
 
 // Feel free to change this if you use a different tilesheet
 const TILE_SZ: usize = 16;
-const W: usize = 320;
-const H: usize = 240;
+const W: usize = 240;
+const H: usize = 160;
 
 // pixels per second
 const PLAYER_SPEED: f32 = 64.0;
@@ -268,7 +268,7 @@ impl Game {
         );
         let levels = vec![Level::from_str(
             &cache
-                .load::<String>("level1")
+                .load::<String>("level3")
                 .expect("Couldn't access level1.txt")
                 .read(),
         )];

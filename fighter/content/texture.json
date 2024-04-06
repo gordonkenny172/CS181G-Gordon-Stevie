@@ -743,7 +743,7 @@
         "x": 0.5,
         "y": 0.5
       }
-    }
+    },
     "Tiny Adventure Pack/Other/Misc/Chest": {
       "frame": {
         "x": 1106,
@@ -1151,7 +1151,7 @@
         "x": 0.5,
         "y": 0.5
       }
-    },
+    }
   },
   "meta": {
     "app": "https://neeeoo.github.io/funkin-packer/",
