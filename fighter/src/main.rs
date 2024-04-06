@@ -40,6 +40,13 @@ const PLAYER: [SheetRegion; 4] = [
     SheetRegion::rect(461 + 16 * 3, 39, 16, 16),
     SheetRegion::rect(461 + 16, 39, 16, 16),
 ];
+const PLAYER2: [SheetRegion; 4] = [
+    //n, e, s, w
+    SheetRegion::rect(461 + 16 * 2, 39, 16, 16),
+    SheetRegion::rect(461, 39, 16, 16),
+    SheetRegion::rect(461 + 16 * 3, 39, 16, 16),
+    SheetRegion::rect(461 + 16, 39, 16, 16),
+];
 const PLAYER_ATK: [SheetRegion; 4] = [
     //n, e, s, w
     SheetRegion::rect(428, 0, 16, 8), // offset by 8px in direction
@@ -293,6 +300,13 @@ impl Game {
             .find(|(t, _)| *t == EntityType::Player)
             .map(|(_, ploc)| ploc)
             .expect("Start level doesn't put the player anywhere");
+        let player2_start = *levels[current_level]
+            .starts()
+            .iter()
+            .find(|(t, _)| *t == EntityType::Player)
+            .map(|(_, ploc)| ploc)
+            .expect("Start level doesn't put the player anywhere");
+   
         let mut game = Game {
             assets: cache,
             current_level,
@@ -312,15 +326,16 @@ impl Game {
                 dir: Dir::S,
             }],
         };
-        game.enter_level(player_start);
+        game.enter_level(player_start,player2_start);
         game
     }
     fn level(&self) -> &Level {
         &self.levels[self.current_level]
     }
-    fn enter_level(&mut self, player_pos: Vec2) {
+    fn enter_level(&mut self, player_pos: Vec2, player2_pos:Vec2) {
         self.entities.truncate(1);
         self.entities[0].pos = player_pos;
+        self.entities[1].pos = player2_pos;
         for (etype, pos) in self.levels[self.current_level].starts().iter() {
             match etype {
                 EntityType::Player => {}
@@ -386,7 +401,6 @@ impl Game {
             dy = -delta.y * KNOCKBACK_SPEED * dt;
             dx2 = -delta.x * KNOCKBACK_SPEED * dt;
             dy2 = -delta.y * KNOCKBACK_SPEED * dt;
-           
         } else {
             if dx > 0.0 {
                 self.entities[0].dir = Dir::E;
@@ -445,11 +459,7 @@ impl Game {
         }
 
         //Collision Detection & Response:
-        let rects: Vec<Rect> = self
-            .entities
-            .iter()
-            .map(|entity| entity.rect())
-            .collect();
+        let rects: Vec<Rect> = self.entities.iter().map(|entity| entity.rect()).collect();
         let mut contacts: Vec<Contact> = gather_contacts(&rects, self.level());
         contacts.sort_by(|a, b| {
             b.displacement
