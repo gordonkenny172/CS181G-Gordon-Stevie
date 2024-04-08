@@ -25,9 +25,9 @@ struct TileData {
     sheet_region: SheetRegion,
 }
 
-const PLAYER: SheetRegion = SheetRegion::rect(461, 39, 16, 16);
+const PLAYER: SheetRegion = SheetRegion::rect(296, 119, 25, 20);
 
-const PLAYER2: SheetRegion = SheetRegion::rect(461 + 16, 39, 16, 16);
+const PLAYER2: SheetRegion = SheetRegion::rect(328, 151, 25, 20);
 
 const PLAYER_ATK: SheetRegion = SheetRegion::rect(428, 0, 16, 8);
 
@@ -294,12 +294,12 @@ impl Game {
                 Entity {
                     etype: EntityType::Player,
                     pos: player_start,
-                    dir: 270.0,
+                    dir: 0.0,
                 },
                 Entity {
                     etype: EntityType::Player,
                     pos: player2_start,
-                    dir: 270.0,
+                    dir: 0.0,
                 },
             ],
         };
@@ -337,7 +337,10 @@ impl Game {
                 _ => (8, 16),
             };
             let delta = dir_to_vec2(self.entities[0].dir) * 7.0;
+            let delta2 = dir_to_vec2(self.entities[1].dir) * 7.0;
+
             let pos = self.entities[0].pos + delta;
+            let pos2 = self.entities[1].pos + delta;
             frend.draw_sprite(
                 0,
                 Transform {
@@ -345,10 +348,22 @@ impl Game {
                     h,
                     x: pos.x,
                     y: pos.y,
-                    rot: self.entities[0].dir,
+                    rot: 0.0,
                 },
                 PLAYER_ATK.with_depth(0),
             );
+            frend.draw_sprite(
+                0,
+                Transform {
+                    w,
+                    h,
+                    x: pos.x,
+                    y: pos.y,
+                    rot: self.entities[1].dir,
+                },
+                PLAYER_ATK.with_depth(0),
+            );
+            
         }
         // TODO POINT: draw hearts
     }
