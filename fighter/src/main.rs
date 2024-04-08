@@ -403,14 +403,14 @@ impl Game {
             dest += dir_to_vec2(self.entities[0].dir);
         }
         else if input.is_key_down(Key::ArrowDown) {
-            dest += dir_to_vec2(self.entities[0].dir * -1.0);
+            dest += dir_to_vec2(self.entities[0].dir) * -1.0;
         }
 
         if input.is_key_down(Key::KeyW) {
             dest2 += dir_to_vec2(self.entities[1].dir);
         }
         else if input.is_key_down(Key::KeyS) {
-            dest2 += dir_to_vec2(self.entities[1].dir * -1.0);
+            dest2 += dir_to_vec2(self.entities[1].dir) * -1.0;
         }
 
 
