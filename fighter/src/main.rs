@@ -25,60 +25,29 @@ struct TileData {
     sheet_region: SheetRegion,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[repr(u8)]
-enum Dir {
-    N,
-    E,
-    S,
-    W,
-}
-const PLAYER: [SheetRegion; 4] = [
-    //n, e, s, w
-    SheetRegion::rect(461 + 16 * 2, 39, 16, 16),
-    SheetRegion::rect(461, 39, 16, 16),
-    SheetRegion::rect(461 + 16 * 3, 39, 16, 16),
-    SheetRegion::rect(461 + 16, 39, 16, 16),
-];
-const PLAYER2: [SheetRegion; 4] = [
-    //n, e, s, w
-    SheetRegion::rect(461 + 16 * 2, 39, 16, 16),
-    SheetRegion::rect(461, 39, 16, 16),
-    SheetRegion::rect(461 + 16 * 3, 39, 16, 16),
-    SheetRegion::rect(461 + 16, 39, 16, 16),
-];
-const PLAYER_ATK: [SheetRegion; 4] = [
-    //n, e, s, w
-    SheetRegion::rect(428, 0, 16, 8), // offset by 8px in direction
-    SheetRegion::rect(349, 22, 8, 16),
-    SheetRegion::rect(162, 13, 16, 8),
-    SheetRegion::rect(549, 17, 8, 16),
-];
-const ENEMY: [SheetRegion; 4] = [
-    SheetRegion::rect(533 + 16 * 2, 39, 16, 16),
-    SheetRegion::rect(533 + 16, 39, 16, 16),
-    SheetRegion::rect(533, 39, 16, 16),
-    SheetRegion::rect(533 + 16 * 3, 39, 16, 16),
-];
+const PLAYER: SheetRegion = SheetRegion::rect(461, 39, 16, 16);
+
+const PLAYER2: SheetRegion = SheetRegion::rect(461 + 16, 39, 16, 16);
+
+const PLAYER_ATK: SheetRegion = SheetRegion::rect(428, 0, 16, 8);
+
+const ENEMY: SheetRegion = SheetRegion::rect(533 + 16, 39, 16, 16);
+
 const PROJECTILE: SheetRegion = SheetRegion::rect(525, 19, 7, 7);
+
 const HEART: SheetRegion = SheetRegion::rect(525, 35, 8, 8);
 
-impl Dir {
-    fn to_vec2(self) -> Vec2 {
-        match self {
-            Dir::N => Vec2 { x: 0.0, y: 1.0 },
-            Dir::E => Vec2 { x: 1.0, y: 0.0 },
-            Dir::S => Vec2 { x: 0.0, y: -1.0 },
-            Dir::W => Vec2 { x: -1.0, y: 0.0 },
-        }
-    }
-}
 #[derive(Clone, Debug)]
 struct Entity {
     pos: Vec2,
-    dir: Dir,
+    dir: f32,
     etype: EntityType,
 }
+
+fn dir_to_vec2(dir: f32) -> Vec2 {
+    Vec2 { x: f32::cos(dir), y: f32::sin(dir) }
+}
+
 impl Entity {
     pub fn rect(&self) -> Rect {
         Rect {
@@ -94,13 +63,13 @@ impl Entity {
             y: self.pos.y,
             w: TILE_SZ as u16,
             h: TILE_SZ as u16,
-            rot: 0.0,
+            rot: self.dir,
         }
     }
     pub fn uv(&self) -> SheetRegion {
         match self.etype {
-            EntityType::Player => PLAYER[self.dir as usize],
-            EntityType::Enemy => ENEMY[self.dir as usize],
+            EntityType::Player => PLAYER,
+            EntityType::Enemy => ENEMY,
             EntityType::Projectile => PROJECTILE,
             _ => panic!("can't draw doors"),
         }
@@ -127,6 +96,7 @@ const H: usize = 160;
 
 // pixels per second
 const PLAYER_SPEED: f32 = 64.0;
+const ROTATE_SPEED: f32 = 0.1;
 const ENEMY_SPEED: f32 = 32.0;
 const KNOCKBACK_SPEED: f32 = 128.0;
 
@@ -278,7 +248,7 @@ impl Game {
         let levels = vec![Level::from_str(
             &cache
                 .load::<String>("level3")
-                .expect("Couldn't access level1.txt")
+                .expect("Couldn't access level3.txt")
                 .read(),
         )];
         let current_level = 0;
@@ -306,7 +276,7 @@ impl Game {
             .find(|(t, _)| *t == EntityType::Player)
             .map(|(_, ploc)| ploc)
             .expect("Start level doesn't put the player anywhere");
-   
+
         let mut game = Game {
             assets: cache,
             current_level,
@@ -320,20 +290,27 @@ impl Game {
             attack_timer: 0.0,
             levels,
             health: 3,
-            entities: vec![Entity {
-                etype: EntityType::Player,
-                pos: player_start,
-                dir: Dir::S,
-            }],
+            entities: vec![
+                Entity {
+                    etype: EntityType::Player,
+                    pos: player_start,
+                    dir: 270.0,
+                },
+                Entity {
+                    etype: EntityType::Player,
+                    pos: player2_start,
+                    dir: 270.0,
+                },
+            ],
         };
-        game.enter_level(player_start,player2_start);
+        game.enter_level(player_start, player2_start);
         game
     }
     fn level(&self) -> &Level {
         &self.levels[self.current_level]
     }
-    fn enter_level(&mut self, player_pos: Vec2, player2_pos:Vec2) {
-        self.entities.truncate(1);
+    fn enter_level(&mut self, player_pos: Vec2, player2_pos: Vec2) {
+        self.entities.truncate(2);
         self.entities[0].pos = player_pos;
         self.entities[1].pos = player2_pos;
         for (etype, pos) in self.levels[self.current_level].starts().iter() {
@@ -342,7 +319,7 @@ impl Game {
                 EntityType::Door(_rm, _x, _y) => todo!("doors not supported"),
                 EntityType::Enemy => self.entities.push(Entity {
                     pos: *pos,
-                    dir: Dir::S,
+                    dir: 270.0,
                     etype: etype.clone(),
                 }),
                 EntityType::Projectile => {}
@@ -356,10 +333,10 @@ impl Game {
         }
         if !self.attack_area.is_empty() {
             let (w, h) = match self.entities[0].dir {
-                Dir::N | Dir::S => (16, 8),
+                90.0 | 270.0 => (16, 8),
                 _ => (8, 16),
             };
-            let delta = self.entities[0].dir.to_vec2() * 7.0;
+            let delta = dir_to_vec2(self.entities[0].dir) * 7.0;
             let pos = self.entities[0].pos + delta;
             frend.draw_sprite(
                 0,
@@ -368,9 +345,9 @@ impl Game {
                     h,
                     x: pos.x,
                     y: pos.y,
-                    rot: 0.0,
+                    rot: self.entities[0].dir,
                 },
-                PLAYER_ATK[self.entities[0].dir as usize].with_depth(0),
+                PLAYER_ATK.with_depth(0),
             );
         }
         // TODO POINT: draw hearts
@@ -382,55 +359,33 @@ impl Game {
         if self.knockback_timer > 0.0 {
             self.knockback_timer -= dt;
         }
-        let mut dx = input.key_axis(Key::ArrowLeft, Key::ArrowRight) * PLAYER_SPEED * DT;
-        // now down means -y and up means +y!  beware!
-        let mut dy = input.key_axis(Key::ArrowDown, Key::ArrowUp) * PLAYER_SPEED * DT;
-        let mut dx2 = input.key_axis(Key::KeyA, Key::KeyD) * PLAYER_SPEED * DT;
-        // now down means -y and up means +y!  beware!
-        let mut dy2 = input.key_axis(Key::KeyW, Key::KeyS) * PLAYER_SPEED * DT;
+
+        let mut d_angle: f32 = 0.0;
+        let mut d_angle2: f32 = 0.0;
+
+        if input.is_key_down(Key::ArrowLeft) {
+            d_angle += ROTATE_SPEED;
+        }
+        else if input.is_key_down(Key::ArrowRight) {
+            d_angle -= ROTATE_SPEED;
+        }
+
+        if input.is_key_down(Key::KeyA) {
+            d_angle2 += ROTATE_SPEED;
+        }
+        else if input.is_key_down(Key::KeyD) {
+            d_angle2 -= ROTATE_SPEED;
+        }
+
         let attacking = !self.attack_area.is_empty();
         let knockback = self.knockback_timer > 0.0;
-        if attacking {
-            dx = 0.0;
-            dy = 0.0;
-            dx2 = 0.0;
-            dy2 = 0.0;
-        } else if knockback {
-            let delta = self.entities[0].dir.to_vec2();
-            dx = -delta.x * KNOCKBACK_SPEED * dt;
-            dy = -delta.y * KNOCKBACK_SPEED * dt;
-            dx2 = -delta.x * KNOCKBACK_SPEED * dt;
-            dy2 = -delta.y * KNOCKBACK_SPEED * dt;
-        } else {
-            if dx > 0.0 {
-                self.entities[0].dir = Dir::E;
-            }
-            if dx < 0.0 {
-                self.entities[0].dir = Dir::W;
-            }
-            if dy > 0.0 {
-                self.entities[0].dir = Dir::N;
-            }
-            if dy < 0.0 {
-                self.entities[0].dir = Dir::S;
-            }
-            if dx2 > 0.0 {
-                self.entities[1].dir = Dir::E;
-            }
-            if dx2 < 0.0 {
-                self.entities[1].dir = Dir::W;
-            }
-            if dy2 > 0.0 {
-                self.entities[1].dir = Dir::N;
-            }
-            if dy2 < 0.0 {
-                self.entities[1].dir = Dir::S;
-            }
-        }
+
+        self.entities[0].dir += d_angle;
+        self.entities[1].dir += d_angle2;
+
         if self.attack_timer <= 0.0 && input.is_key_pressed(Key::Space) {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
-            self.attack_area = todo!();
             self.attack_timer = ATTACK_MAX_TIME;
         } else if self.attack_timer <= ATTACK_COOLDOWN_TIME {
             self.attack_area = Rect {
@@ -440,22 +395,40 @@ impl Game {
                 h: 0,
             };
         }
-        let dest = self.entities[0].pos + Vec2 { x: dx, y: dy };
-        let dest2 = self.entities[1].pos + Vec2 { x: dx2, y: dy2 };
+        
+        let mut dest = self.entities[0].pos;
+        let mut dest2 = self.entities[1].pos;
+
+        if input.is_key_down(Key::ArrowUp) {
+            dest += dir_to_vec2(self.entities[0].dir);
+        }
+        else if input.is_key_down(Key::ArrowDown) {
+            dest += dir_to_vec2(self.entities[0].dir * -1.0);
+        }
+
+        if input.is_key_down(Key::KeyW) {
+            dest2 += dir_to_vec2(self.entities[1].dir);
+        }
+        else if input.is_key_down(Key::KeyS) {
+            dest2 += dir_to_vec2(self.entities[1].dir * -1.0);
+        }
+
+
         self.entities[0].pos = dest;
-        self.entities[1].pos = dest;
+        self.entities[1].pos = dest2;
+
         let mut rng = rand::thread_rng();
         for enemy in self.entities[1..].iter_mut() {
             if rng.gen_bool(0.05) {
                 enemy.dir = match rng.gen_range(0..4) {
-                    0 => Dir::N,
-                    1 => Dir::E,
-                    2 => Dir::S,
-                    3 => Dir::W,
+                    0 => 90.0,
+                    1 => 0.0,
+                    2 => 270.0,
+                    3 => 90.0,
                     _ => panic!(),
                 };
             }
-            enemy.pos += enemy.dir.to_vec2() * ENEMY_SPEED * DT;
+            enemy.pos += dir_to_vec2(enemy.dir) * ENEMY_SPEED * DT;
         }
 
         //Collision Detection & Response:
