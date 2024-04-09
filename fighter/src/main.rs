@@ -364,7 +364,8 @@ impl Game {
         if self.knockback_timer > 0.0 {
             self.knockback_timer -= dt;
         }
-        let mut dx = input.key_axis(Key::ArrowLeft, Key::ArrowRight) * PLAYER_SPEED * DT;
+        //let mut dx = input.key_axis(Key::ArrowLeft, Key::ArrowRight) * PLAYER_SPEED * DT;
+        let mut dx = input.key_axis(Key::ArrowLeft, Key::ArrowRight) * 
         // now down means -y and up means +y!  beware!
         let mut dy = input.key_axis(Key::ArrowDown, Key::ArrowUp) * PLAYER_SPEED * DT;
         let mut dx2 = input.key_axis(Key::KeyA, Key::KeyD) * PLAYER_SPEED * DT;
