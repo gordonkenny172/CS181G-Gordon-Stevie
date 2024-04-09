@@ -56,12 +56,22 @@ impl Entity {
         }
     }
     pub fn transform(&self) -> Transform {
-        Transform {
-            x: self.pos.x,
-            y: self.pos.y,
-            w: TILE_SZ as u16,
-            h: TILE_SZ as u16,
-            rot: self.dir,
+        if self.etype == EntityType::Projectile {
+            Transform {
+                x: self.pos.x,
+                y: self.pos.y,
+                w: 4,
+                h: 4,
+                rot: self.dir,
+            }
+        } else {
+            Transform {
+                x: self.pos.x,
+                y: self.pos.y,
+                w: TILE_SZ as u16,
+                h: TILE_SZ as u16,
+                rot: self.dir,
+            }
         }
     }
     pub fn uv(&self) -> SheetRegion {
@@ -317,7 +327,11 @@ impl Game {
     }
     fn render(&mut self, frend: &mut Immediate) {
         self.level().render_immediate(frend);
-        for entity in self.entities.iter() {
+        
+        frend.draw_sprite(0, self.entities[0].transform(), PLAYER);
+        frend.draw_sprite(0, self.entities[1].transform(), PLAYER2);
+
+        for entity in self.entities[2..].iter() {
             frend.draw_sprite(0, entity.transform(), entity.uv());
         }
         let (w, h) = match self.entities[0].dir {
@@ -360,6 +374,12 @@ impl Game {
         if self.attack_timer <= 0.0 && input.is_key_pressed(Key::Space) {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
+            self.entities.push(Entity{
+                pos: self.entities[0].pos,
+                dir: self.entities[0].dir,
+                etype: EntityType::Projectile
+            });
+            
             self.attack_timer = ATTACK_MAX_TIME;
         }
         
@@ -384,7 +404,7 @@ impl Game {
         self.entities[1].pos = dest2;
 
         let mut rng = rand::thread_rng();
-        for enemy in self.entities[1..].iter_mut() {
+        for enemy in self.entities[2..5].iter_mut() {
             if rng.gen_bool(0.05) {
                 enemy.dir = match rng.gen_range(0..4) {
                     0 => 90.0,
@@ -395,6 +415,10 @@ impl Game {
                 };
             }
             enemy.pos += dir_to_vec2(enemy.dir) * ENEMY_SPEED * DT;
+        }
+
+        for projectile in self.entities[5..].iter_mut() {
+            projectile.pos += dir_to_vec2(projectile.dir);
         }
 
         //Collision Detection & Response:
