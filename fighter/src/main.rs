@@ -29,8 +29,6 @@ const PLAYER: SheetRegion = SheetRegion::rect(296, 119, 25, 20);
 
 const PLAYER2: SheetRegion = SheetRegion::rect(328, 151, 25, 20);
 
-const PLAYER_ATK: SheetRegion = SheetRegion::rect(428, 0, 16, 8);
-
 const ENEMY: SheetRegion = SheetRegion::rect(533 + 16, 39, 16, 16);
 
 const PROJECTILE: SheetRegion = SheetRegion::rect(525, 19, 7, 7);
@@ -83,9 +81,7 @@ struct Game {
     current_level: usize,
     levels: Vec<Level>,
     entities: Vec<Entity>,
-    attack_area: Rect,
     attack_timer: f32,
-    knockback_timer: f32,
     health: u8,
 }
 
@@ -280,13 +276,6 @@ impl Game {
         let mut game = Game {
             assets: cache,
             current_level,
-            attack_area: Rect {
-                x: 0.0,
-                y: 0.0,
-                w: 0,
-                h: 0,
-            },
-            knockback_timer: 0.0,
             attack_timer: 0.0,
             levels,
             health: 3,
@@ -331,48 +320,21 @@ impl Game {
         for entity in self.entities.iter() {
             frend.draw_sprite(0, entity.transform(), entity.uv());
         }
-        if !self.attack_area.is_empty() {
-            let (w, h) = match self.entities[0].dir {
-                90.0 | 270.0 => (16, 8),
-                _ => (8, 16),
-            };
-            let delta = dir_to_vec2(self.entities[0].dir) * 7.0;
-            let delta2 = dir_to_vec2(self.entities[1].dir) * 7.0;
+        let (w, h) = match self.entities[0].dir {
+            90.0 | 270.0 => (16, 8),
+            _ => (8, 16),
+        };
 
-            let pos = self.entities[0].pos + delta;
-            let pos2 = self.entities[1].pos + delta;
-            frend.draw_sprite(
-                0,
-                Transform {
-                    w,
-                    h,
-                    x: pos.x,
-                    y: pos.y,
-                    rot: 0.0,
-                },
-                PLAYER_ATK.with_depth(0),
-            );
-            frend.draw_sprite(
-                0,
-                Transform {
-                    w,
-                    h,
-                    x: pos.x,
-                    y: pos.y,
-                    rot: self.entities[1].dir,
-                },
-                PLAYER_ATK.with_depth(0),
-            );
-            
-        }
-        // TODO POINT: draw hearts
+        let delta = dir_to_vec2(self.entities[0].dir) * 7.0;
+        let delta2 = dir_to_vec2(self.entities[1].dir) * 7.0;
+
+        let pos = self.entities[0].pos + delta;
+        let pos2 = self.entities[1].pos + delta;
+
     }
     fn simulate(&mut self, input: &Input, dt: f32) {
         if self.attack_timer > 0.0 {
             self.attack_timer -= dt;
-        }
-        if self.knockback_timer > 0.0 {
-            self.knockback_timer -= dt;
         }
 
         let mut d_angle: f32 = 0.0;
@@ -392,9 +354,6 @@ impl Game {
             d_angle2 -= ROTATE_SPEED;
         }
 
-        let attacking = !self.attack_area.is_empty();
-        let knockback = self.knockback_timer > 0.0;
-
         self.entities[0].dir += d_angle;
         self.entities[1].dir += d_angle2;
 
@@ -402,13 +361,6 @@ impl Game {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
             self.attack_timer = ATTACK_MAX_TIME;
-        } else if self.attack_timer <= ATTACK_COOLDOWN_TIME {
-            self.attack_area = Rect {
-                x: 0.0,
-                y: 0.0,
-                w: 0,
-                h: 0,
-            };
         }
         
         let mut dest = self.entities[0].pos;
@@ -427,7 +379,6 @@ impl Game {
         else if input.is_key_down(Key::KeyS) {
             dest2 += dir_to_vec2(self.entities[1].dir) * -1.0;
         }
-
 
         self.entities[0].pos = dest;
         self.entities[1].pos = dest2;
