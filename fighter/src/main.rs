@@ -39,6 +39,7 @@ const HEART: SheetRegion = SheetRegion::rect(525, 35, 8, 8);
 
 #[derive(Clone, Debug)]
 struct Entity {
+    alive: bool,
     pos: Vec2,
     dir: f32,
     etype: EntityType,
@@ -331,11 +332,13 @@ impl Game {
             health: 3,
             entities: vec![
                 Entity {
+                    alive: true,
                     etype: EntityType::Player,
                     pos: player_start,
                     dir: 0.0,
                 },
                 Entity {
+                    alive: true,
                     etype: EntityType::Player,
                     pos: player2_start,
                     dir: 0.0,
@@ -357,6 +360,7 @@ impl Game {
                 EntityType::Player => {}
                 EntityType::Door(_rm, _x, _y) => todo!("doors not supported"),
                 EntityType::Enemy => self.entities.push(Entity {
+                    alive: true,
                     pos: *pos,
                     dir: 270.0,
                     etype: etype.clone(),
@@ -415,6 +419,7 @@ impl Game {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
             self.entities.push(Entity {
+                alive: true,
                 pos: self.entities[0].pos,
                 dir: self.entities[0].dir,
                 etype: EntityType::Projectile,
@@ -427,6 +432,7 @@ impl Game {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
             self.entities.push(Entity {
+                alive: true,
                 pos: self.entities[1].pos,
                 dir: self.entities[1].dir,
                 etype: EntityType::Projectile,
