@@ -128,7 +128,7 @@ struct Contact {
     displacement: Vec2,
 }
 
-fn gather_contacts (objs_a: &Vec<Rect>, objs_b: &Vec<Rect>) -> Vec<Contact>{
+fn gather_contacts(objs_a: &Vec<Rect>, objs_b: &Vec<Rect>) -> Vec<Contact> {
     let mut contacts: Vec<Contact> = Vec::new();
 
     for (a_idx, a_rect) in objs_a.iter().enumerate() {
@@ -206,9 +206,7 @@ impl Game {
 
     //todo!
     fn projectile_bounce(&mut self, contacts: &mut Vec<Contact>) {
-        for contact in contacts.iter_mut() {
-            
-        }
+        for contact in contacts.iter_mut() {}
     }
 }
 
@@ -501,11 +499,13 @@ impl Game {
             .map(|projectile| projectile.rect())
             .collect();
 
-        let mut player_level_contacts: Vec<Contact> = gather_level_contacts(&player_rects, self.level());
+        let mut player_level_contacts: Vec<Contact> =
+            gather_level_contacts(&player_rects, self.level());
 
-        let mut projectile_player_contacts: Vec<Contact> = gather_contacts(&projectile_rects, &player_rects);
+        let mut projectile_player_contacts: Vec<Contact> =
+            gather_contacts(&projectile_rects, &player_rects);
 
-//        let mut proj_contacts: Vec<Contact> = gather_contacts(&projectile_rects, self.level());
+        //        let mut proj_contacts: Vec<Contact> = gather_contacts(&projectile_rects, self.level());
 
         player_level_contacts.sort_by(|a, b| {
             b.displacement
