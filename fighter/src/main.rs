@@ -434,7 +434,9 @@ impl Game {
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
             self.entities.push(Entity {
                 alive: true,
-                pos: self.entities[0].pos,
+
+                // how to put the bullet at the top of the tank so it doesnt kill itself
+                pos: self.entities[0].pos + dir_to_vec2(self.entities[0].dir) * 15.0,
                 dir: self.entities[0].dir,
                 etype: EntityType::Projectile,
             });
