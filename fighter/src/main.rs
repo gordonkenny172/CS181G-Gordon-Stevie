@@ -195,7 +195,12 @@ impl Game {
     //todo!
     fn kill_player(&mut self, player_contacts: &mut Vec<Contact>) {
         for contact in player_contacts.iter_mut() {
-
+            if contact.b_i == 0 {
+                self.entities[0].alive = false;
+            }
+            if contact.b_i == 1 {
+                self.entities[1].alive = false;
+            }
         }
     }
 
@@ -372,22 +377,31 @@ impl Game {
     fn render(&mut self, frend: &mut Immediate) {
         self.level().render_immediate(frend);
 
-        frend.draw_sprite(0, self.entities[0].transform(), PLAYER);
-        frend.draw_sprite(0, self.entities[1].transform(), PLAYER2);
+        if self.entities[0].alive {
+            frend.draw_sprite(0, self.entities[0].transform(), PLAYER);
+        }
+        if self.entities[1].alive {
+            frend.draw_sprite(0, self.entities[1].transform(), PLAYER2);
+        }
 
         for entity in self.entities[2..].iter() {
-            frend.draw_sprite(0, entity.transform(), entity.uv());
+            if entity.alive {
+                frend.draw_sprite(0, entity.transform(), entity.uv());
+            }
         }
-        let (w, h) = match self.entities[0].dir {
-            90.0 | 270.0 => (16, 8),
-            _ => (8, 16),
-        };
 
-        let delta = dir_to_vec2(self.entities[0].dir) * 7.0;
-        let delta2 = dir_to_vec2(self.entities[1].dir) * 7.0;
+        // do we need this? what is this for?
 
-        let pos = self.entities[0].pos + delta;
-        let pos2 = self.entities[1].pos + delta;
+        // let (w, h) = match self.entities[0].dir {
+        //     90.0 | 270.0 => (16, 8),
+        //     _ => (8, 16),
+        // };
+
+        // let delta = dir_to_vec2(self.entities[0].dir) * 7.0;
+        // let delta2 = dir_to_vec2(self.entities[1].dir) * 7.0;
+
+        // let pos = self.entities[0].pos + delta;
+        // let pos2 = self.entities[1].pos + delta;
     }
     fn simulate(&mut self, input: &Input, dt: f32) {
         if self.p1_attack_timer > 0.0 {
@@ -499,5 +513,6 @@ impl Game {
         });
 
         self.do_collision_response(&mut player_level_contacts);
+        self.kill_player(&mut projectile_player_contacts);
     }
 }
