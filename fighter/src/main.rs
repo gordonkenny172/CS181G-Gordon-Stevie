@@ -191,6 +191,7 @@ impl Game {
         }
     }
 
+    //todo!
     fn kill_player(&mut self, player_contacts: &mut Vec<Contact>) {
         for contact in player_contacts.iter_mut() {
 
@@ -217,7 +218,7 @@ fn main() {
         winit::window::WindowBuilder::new()
             .with_title("test")
             .with_inner_size(winit::dpi::LogicalSize::new(1024.0, 768.0)),
-        Some((W as u32, H as u32)),
+        Some((W as u32 * 4, H as u32 * 4)),
     );
 
     let mut input = Input::default();
@@ -456,7 +457,7 @@ impl Game {
         for enemy in self.entities[2..5].iter_mut() {
             if rng.gen_bool(0.05) {
                 enemy.dir = match rng.gen_range(0..4) {
-                    0 => 90.0,
+                    0 => 180.0,
                     1 => 0.0,
                     2 => 270.0,
                     3 => 90.0,
