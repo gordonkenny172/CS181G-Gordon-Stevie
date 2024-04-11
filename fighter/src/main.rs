@@ -451,7 +451,7 @@ impl Game {
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
             self.entities.push(Entity {
                 alive: true,
-                pos: self.entities[1].pos,
+                pos: self.entities[1].pos + dir_to_vec2(self.entities[1].dir) * 15.0,
                 dir: self.entities[1].dir,
                 etype: EntityType::Projectile,
             });
