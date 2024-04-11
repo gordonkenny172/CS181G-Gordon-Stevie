@@ -97,6 +97,7 @@ struct Game {
     current_level: usize,
     levels: Vec<Level>,
     entities: Vec<Entity>,
+    bounce: Vec<usize>,
     p1_attack_timer: f32,
     p2_attack_timer: f32,
     health: u8,
@@ -331,6 +332,7 @@ impl Game {
             current_level,
             p1_attack_timer: 0.0,
             p2_attack_timer: 0.0,
+            bounce: vec![3, 3, 3, 3, 3],
             levels,
             health: 3,
             entities: vec![
@@ -439,6 +441,8 @@ impl Game {
                 etype: EntityType::Projectile,
             });
 
+            self.bounce.push(3);
+
             self.p1_attack_timer = ATTACK_MAX_TIME;
         }
 
@@ -451,6 +455,8 @@ impl Game {
                 dir: self.entities[1].dir,
                 etype: EntityType::Projectile,
             });
+
+            self.bounce.push(3);
 
             self.p2_attack_timer = ATTACK_MAX_TIME;
         }
