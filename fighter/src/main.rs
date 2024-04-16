@@ -51,6 +51,9 @@ fn dir_to_vec2(dir: f32) -> Vec2 {
         y: f32::sin(dir),
     }
 }
+fn vec2_to_dir(vec2: Vec2) -> f32 {
+    vec2.y.atan2(vec2.x)
+}
 
 impl Entity {
     pub fn rect(&self) -> Rect {
@@ -193,7 +196,40 @@ impl Game {
         }
     }
 
-    //todo!
+
+
+    //todo! Separate projectiles from entities
+    fn projectile_level_response(&mut self, contacts: &mut Vec<Contact>) {
+        for contact in contacts.iter_mut() {
+            if contact.displacement.x < contact.displacement.y {
+                contact.displacement.y = 0.0;
+            } else {
+                contact.displacement.x = 0.0;
+            }
+
+            let b_pos = contact.b_r.rect_to_pos();
+
+            if let Some(entity) = self.entities.get_mut(contact.a_i) {
+                
+                let mut t_vec2 = dir_to_vec2(entity.dir);
+
+                if entity.pos.x < b_pos.x {
+                    contact.displacement.x *= -1.0;
+
+                    t_vec2.x *= -1.0;
+                }
+                if entity.pos.y < b_pos.y {
+                    contact.displacement.y *= -1.0;
+
+                    t_vec2.y *= -1.0;
+                }
+
+                entity.pos += contact.displacement;
+                entity.dir = vec2_to_dir(t_vec2);
+            }
+        }
+    }
+
     fn kill_player(&mut self, player_contacts: &mut Vec<Contact>) {
         for contact in player_contacts.iter_mut() {
             if contact.b_i == 0 {
@@ -203,11 +239,6 @@ impl Game {
                 self.entities[1].alive = false;
             }
         }
-    }
-
-    //todo!
-    fn projectile_bounce(&mut self, contacts: &mut Vec<Contact>) {
-        for contact in contacts.iter_mut() {}
     }
 }
 
@@ -511,7 +542,7 @@ impl Game {
         let mut projectile_player_contacts: Vec<Contact> =
             gather_contacts(&projectile_rects, &player_rects);
 
-        //        let mut proj_contacts: Vec<Contact> = gather_contacts(&projectile_rects, self.level());
+        let mut projectile_level_contacts: Vec<Contact> = gather_level_contacts(&projectile_rects, self.level());
 
         player_level_contacts.sort_by(|a, b| {
             b.displacement
@@ -522,5 +553,7 @@ impl Game {
 
         self.do_collision_response(&mut player_level_contacts);
         self.kill_player(&mut projectile_player_contacts);
+        self.projectile_level_response(&mut projectile_level_contacts);
+
     }
 }
