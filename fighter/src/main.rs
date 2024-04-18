@@ -4,6 +4,7 @@ use frenderer::{
     sprites::{Camera2D, SheetRegion, Transform},
     wgpu, Immediate,
 };
+use image::error::ParameterErrorKind;
 use rand::Rng;
 mod geom;
 mod grid;
@@ -101,6 +102,7 @@ struct Game {
     levels: Vec<Level>,
     entities: Vec<Entity>,
     bounce: Vec<usize>,
+    projectiles: Vec<Entity>,
     p1_attack_timer: f32,
     p2_attack_timer: f32,
     health: u8,
@@ -209,23 +211,29 @@ impl Game {
 
             let b_pos = contact.b_r.rect_to_pos();
 
-            if let Some(entity) = self.entities.get_mut(contact.a_i) {
+            if let Some(projectile) = self.projectiles.get_mut(contact.a_i) {
                 
-                let mut t_vec2 = dir_to_vec2(entity.dir);
+                let mut t_vec2 = dir_to_vec2(projectile.dir);
 
-                if entity.pos.x < b_pos.x {
+                if projectile.pos.x < b_pos.x {
                     contact.displacement.x *= -1.0;
 
-                    t_vec2.x *= -1.0;
+                    if self.bounce[contact.a_i] > 0 {
+                        t_vec2.x *= -1.0;
+                        self.bounce[contact.a_i] -= 1;
+                    }
                 }
-                if entity.pos.y < b_pos.y {
+                if projectile.pos.y < b_pos.y {
                     contact.displacement.y *= -1.0;
 
-                    t_vec2.y *= -1.0;
+                    if self.bounce[contact.a_i] > 0 {
+                        t_vec2.y *= -1.0;
+                        self.bounce[contact.a_i] -= 1;
+                    }
                 }
 
-                entity.pos += contact.displacement;
-                entity.dir = vec2_to_dir(t_vec2);
+                projectile.pos += contact.displacement;
+                projectile.dir = vec2_to_dir(t_vec2);
             }
         }
     }
@@ -363,7 +371,7 @@ impl Game {
             current_level,
             p1_attack_timer: 0.0,
             p2_attack_timer: 0.0,
-            bounce: vec![3, 3, 3, 3, 3],
+            bounce: Vec::new(),
             levels,
             health: 3,
             entities: vec![
@@ -380,6 +388,7 @@ impl Game {
                     dir: 0.0,
                 },
             ],
+            projectiles: Vec::new(),
         };
         game.enter_level(player_start, player2_start);
         game
@@ -418,6 +427,12 @@ impl Game {
         for entity in self.entities[2..].iter() {
             if entity.alive {
                 frend.draw_sprite(0, entity.transform(), entity.uv());
+            }
+        }
+
+        for projectile in self.projectiles.iter() {
+            if projectile.alive {
+                frend.draw_sprite(0, projectile.transform(), projectile.uv());
             }
         }
 
@@ -463,7 +478,7 @@ impl Game {
         if self.p1_attack_timer <= 0.0 && input.is_key_pressed(Key::Space) {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
-            self.entities.push(Entity {
+            self.projectiles.push(Entity {
                 alive: true,
 
                 // how to put the bullet at the top of the tank so it doesnt kill itself
@@ -480,7 +495,7 @@ impl Game {
         if self.p2_attack_timer <= 0.0 && input.is_key_pressed(Key::KeyQ) {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
-            self.entities.push(Entity {
+            self.projectiles.push(Entity {
                 alive: true,
                 pos: self.entities[1].pos + dir_to_vec2(self.entities[1].dir) * 15.0,
                 dir: self.entities[1].dir,
@@ -524,14 +539,14 @@ impl Game {
             enemy.pos += dir_to_vec2(enemy.dir) * ENEMY_SPEED * DT;
         }
 
-        for projectile in self.entities[5..].iter_mut() {
+        for projectile in self.projectiles.iter_mut() {
             projectile.pos += dir_to_vec2(projectile.dir);
         }
 
         //Collision Detection & Response:
         let player_rects: Vec<Rect> = self.entities.iter().map(|entity| entity.rect()).collect();
 
-        let projectile_rects: Vec<Rect> = self.entities[5..]
+        let projectile_rects: Vec<Rect> = self.projectiles
             .iter()
             .map(|projectile| projectile.rect())
             .collect();
