@@ -46,6 +46,15 @@ struct Entity {
     etype: EntityType,
 }
 
+// struct Projectile {
+//     alive: bool,
+//     pos: Vec2,
+//     dir: f32,
+//     shooter: ProjectileType,
+// }
+
+// enum
+
 fn dir_to_vec2(dir: f32) -> Vec2 {
     Vec2 {
         x: f32::cos(dir),
@@ -217,19 +226,18 @@ impl Game {
 
                 if projectile.pos.x < b_pos.x {
                     contact.displacement.x *= -1.0;
-
-                    if self.bounce[contact.a_i] > 0 {
-                        t_vec2.x *= -1.0;
-                        self.bounce[contact.a_i] -= 1;
-                    }
                 }
                 if projectile.pos.y < b_pos.y {
                     contact.displacement.y *= -1.0;
+                }
 
-                    if self.bounce[contact.a_i] > 0 {
-                        t_vec2.y *= -1.0;
-                        self.bounce[contact.a_i] -= 1;
-                    }
+                //now bounce
+
+                if contact.displacement.x != 0.0 {
+                    
+                }
+                else if contact.displacement.y != 0.0 {
+
                 }
 
                 projectile.pos += contact.displacement;
@@ -430,7 +438,7 @@ impl Game {
             }
         }
 
-        for projectile in self.projectiles.iter() {
+        for (p_i, projectile) in self.projectiles.iter().enumerate() {
             if projectile.alive {
                 frend.draw_sprite(0, projectile.transform(), projectile.uv());
             }
