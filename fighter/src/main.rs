@@ -4,6 +4,7 @@ use frenderer::{
     sprites::{Camera2D, SheetRegion, Transform},
     wgpu, Immediate,
 };
+use image::error::ParameterErrorKind;
 use rand::Rng;
 mod geom;
 mod grid;
@@ -45,11 +46,23 @@ struct Entity {
     etype: EntityType,
 }
 
+// struct Projectile {
+//     alive: bool,
+//     pos: Vec2,
+//     dir: f32,
+//     shooter: ProjectileType,
+// }
+
+// enum
+
 fn dir_to_vec2(dir: f32) -> Vec2 {
     Vec2 {
         x: f32::cos(dir),
         y: f32::sin(dir),
     }
+}
+fn vec2_to_dir(vec2: Vec2) -> f32 {
+    vec2.y.atan2(vec2.x)
 }
 
 impl Entity {
@@ -98,6 +111,7 @@ struct Game {
     levels: Vec<Level>,
     entities: Vec<Entity>,
     bounce: Vec<usize>,
+    projectiles: Vec<Entity>,
     p1_attack_timer: f32,
     p2_attack_timer: f32,
     health: u8,
@@ -193,7 +207,45 @@ impl Game {
         }
     }
 
-    //todo!
+
+
+    //todo! Separate projectiles from entities
+    fn projectile_level_response(&mut self, contacts: &mut Vec<Contact>) {
+        for contact in contacts.iter_mut() {
+            if contact.displacement.x < contact.displacement.y {
+                contact.displacement.y = 0.0;
+            } else {
+                contact.displacement.x = 0.0;
+            }
+
+            let b_pos = contact.b_r.rect_to_pos();
+
+            if let Some(projectile) = self.projectiles.get_mut(contact.a_i) {
+                
+                let mut t_vec2 = dir_to_vec2(projectile.dir);
+
+                if projectile.pos.x < b_pos.x {
+                    contact.displacement.x *= -1.0;
+                }
+                if projectile.pos.y < b_pos.y {
+                    contact.displacement.y *= -1.0;
+                }
+
+                //now bounce
+
+                if contact.displacement.x != 0.0 {
+                    
+                }
+                else if contact.displacement.y != 0.0 {
+
+                }
+
+                projectile.pos += contact.displacement;
+                projectile.dir = vec2_to_dir(t_vec2);
+            }
+        }
+    }
+
     fn kill_player(&mut self, player_contacts: &mut Vec<Contact>) {
         for contact in player_contacts.iter_mut() {
             if contact.b_i == 0 {
@@ -203,11 +255,6 @@ impl Game {
                 self.entities[1].alive = false;
             }
         }
-    }
-
-    //todo!
-    fn projectile_bounce(&mut self, contacts: &mut Vec<Contact>) {
-        for contact in contacts.iter_mut() {}
     }
 }
 
@@ -332,7 +379,7 @@ impl Game {
             current_level,
             p1_attack_timer: 0.0,
             p2_attack_timer: 0.0,
-            bounce: vec![3, 3, 3, 3, 3],
+            bounce: Vec::new(),
             levels,
             health: 3,
             entities: vec![
@@ -349,6 +396,7 @@ impl Game {
                     dir: 0.0,
                 },
             ],
+            projectiles: Vec::new(),
         };
         game.enter_level(player_start, player2_start);
         game
@@ -387,6 +435,12 @@ impl Game {
         for entity in self.entities[2..].iter() {
             if entity.alive {
                 frend.draw_sprite(0, entity.transform(), entity.uv());
+            }
+        }
+
+        for (p_i, projectile) in self.projectiles.iter().enumerate() {
+            if projectile.alive {
+                frend.draw_sprite(0, projectile.transform(), projectile.uv());
             }
         }
 
@@ -432,7 +486,7 @@ impl Game {
         if self.p1_attack_timer <= 0.0 && input.is_key_pressed(Key::Space) {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
-            self.entities.push(Entity {
+            self.projectiles.push(Entity {
                 alive: true,
 
                 // how to put the bullet at the top of the tank so it doesnt kill itself
@@ -449,7 +503,7 @@ impl Game {
         if self.p2_attack_timer <= 0.0 && input.is_key_pressed(Key::KeyQ) {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
-            self.entities.push(Entity {
+            self.projectiles.push(Entity {
                 alive: true,
                 pos: self.entities[1].pos + dir_to_vec2(self.entities[1].dir) * 15.0,
                 dir: self.entities[1].dir,
@@ -493,14 +547,14 @@ impl Game {
             enemy.pos += dir_to_vec2(enemy.dir) * ENEMY_SPEED * DT;
         }
 
-        for projectile in self.entities[5..].iter_mut() {
+        for projectile in self.projectiles.iter_mut() {
             projectile.pos += dir_to_vec2(projectile.dir);
         }
 
         //Collision Detection & Response:
         let player_rects: Vec<Rect> = self.entities.iter().map(|entity| entity.rect()).collect();
 
-        let projectile_rects: Vec<Rect> = self.entities[5..]
+        let projectile_rects: Vec<Rect> = self.projectiles
             .iter()
             .map(|projectile| projectile.rect())
             .collect();
@@ -511,7 +565,7 @@ impl Game {
         let mut projectile_player_contacts: Vec<Contact> =
             gather_contacts(&projectile_rects, &player_rects);
 
-        //        let mut proj_contacts: Vec<Contact> = gather_contacts(&projectile_rects, self.level());
+        let mut projectile_level_contacts: Vec<Contact> = gather_level_contacts(&projectile_rects, self.level());
 
         player_level_contacts.sort_by(|a, b| {
             b.displacement
@@ -522,5 +576,7 @@ impl Game {
 
         self.do_collision_response(&mut player_level_contacts);
         self.kill_player(&mut projectile_player_contacts);
+        self.projectile_level_response(&mut projectile_level_contacts);
+
     }
 }
