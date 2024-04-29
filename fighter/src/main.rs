@@ -234,10 +234,10 @@ impl Game {
                 //now bounce
 
                 if contact.displacement.x != 0.0 {
-                    
+                    t_vec2.x *= -1.0;
                 }
                 else if contact.displacement.y != 0.0 {
-
+                    t_vec2.y *= -1.0;
                 }
 
                 projectile.pos += contact.displacement;
