@@ -11,6 +11,12 @@ pub struct Rect {
     pub h: u16,
 }
 
+pub struct Circle {
+    pub x: f32,
+    pub y: f32, 
+    pub r: f32,
+}
+
 impl Rect {
     pub fn overlap(&self, other: Rect) -> Option<Vec2> {
         let x_overlap =
@@ -44,6 +50,30 @@ impl Rect {
         self.w == 0 || self.h == 0
     }
 }
+
+impl Circle {
+    pub fn overlap(&self, other: Circle) -> Option<Vec2> {
+        let distance_sq = f32::abs((self.x - other.x) * (self.x - other.x) + (self.y - other.y) * (self.y - other.y)); 
+        let radius_sq = (self.r + other.r) * (self.r + other.r);
+
+        if distance_sq < radius_sq {
+            let midpoint_x = (self.x + other.x) / 2.0;
+            let midpoint_y = (self.y + other.y) / 2.0;
+
+            let x_overlap = midpoint_x - self.x;
+            let y_overlap = midpoint_y - self.y;
+
+            Some (Vec2 {
+                x: x_overlap,
+                y: y_overlap
+            })
+        }
+        else {
+            None
+        }
+    }
+}
+
 impl std::ops::Add for Vec2 {
     type Output = Vec2;
 
