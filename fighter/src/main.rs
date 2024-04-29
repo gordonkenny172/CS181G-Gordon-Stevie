@@ -220,13 +220,11 @@ fn gather_contacts_2(objs_a: &Vec<Shape>, objs_b: &Vec<Shape>) -> Vec<Contact2> 
 fn gather_level_contacts_2(objs: &Vec<Shape>, level: &Level) -> Vec<Contact2> {
     let mut contacts: Vec<Contact2> = Vec::new();
 
-
     //edit tiles_within
     for (a_idx, a_shape) in objs.iter().enumerate() {
         for (b_idx, (b_rect, tile_data)) in level.tiles_within(*a_shape).enumerate() {
-            
             let b_shape = Shape::Rect(b_rect);
-            
+
             if tile_data.solid {
                 if let Some(overlap) = a_shape.overlap(b_shape) {
                     contacts.push(Contact2 {
@@ -610,10 +608,10 @@ impl Game {
         //Collision Detection & Response:
         let player_rects: Vec<Rect> = self.entities.iter().map(|entity| entity.rect()).collect();
 
-        let projectile_circles: Vec<Circle> = self
+        let projectile_circles: Vec<Rect> = self
             .projectiles
             .iter()
-            .map(|projectile| projectile.circle())
+            .map(|projectile| projectile.rect())
             .collect();
 
         let mut player_level_contacts: Vec<Contact> =

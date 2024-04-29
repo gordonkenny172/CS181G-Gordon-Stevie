@@ -34,15 +34,13 @@ impl Shape {
 
                     if s_circle.x < o_rect.x {
                         test_x = o_rect.x;
-                    }
-                    else if s_circle.x > o_rect.x + o_rect.w as f32 {
+                    } else if s_circle.x > o_rect.x + o_rect.w as f32 {
                         test_x = o_rect.x + o_rect.w as f32;
                     }
 
                     if s_circle.y < o_rect.y {
                         test_y = o_rect.y;
-                    }
-                    else if s_circle.y > o_rect.y + o_rect.h as f32 {
+                    } else if s_circle.y > o_rect.y + o_rect.h as f32 {
                         test_y = o_rect.y + o_rect.h as f32;
                     }
 
@@ -53,7 +51,7 @@ impl Shape {
                     if dist <= s_circle.r {
                         Some(Vec2 {
                             x: s_circle.r - dist_x,
-                            y: s_circle.r - dist_y
+                            y: s_circle.r - dist_y,
                         })
                     } else {
                         None
@@ -61,7 +59,7 @@ impl Shape {
                 }
             },
             Shape::Rect(s_rect) => match other {
-                Shape::Circle(o_circle) => {None}
+                Shape::Circle(o_circle) => None,
                 Shape::Rect(o_rect) => s_rect.overlap(o_rect),
             },
         }
