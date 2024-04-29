@@ -528,6 +528,15 @@ checksum = "11157ac094ffbdde99aa67b23417ebdd801842852b500e395a45a9c0aac03e4a"
 [[package]]
 name = "engine"
 version = "0.1.0"
+dependencies = [
+ "assets_manager",
+ "bytemuck",
+ "frenderer",
+ "getrandom",
+ "image",
+ "rand",
+ "winit",
+]
 
 [[package]]
 name = "env_logger"
@@ -1416,6 +1425,15 @@ checksum = "43d84d1d7a6ac92673717f9f6d1518374ef257669c24ebc5ac25d5033828be58"
 [[package]]
 name = "puzzle"
 version = "0.1.0"
+dependencies = [
+ "assets_manager",
+ "bytemuck",
+ "frenderer",
+ "getrandom",
+ "image",
+ "rand",
+ "winit",
+]
 
 [[package]]
 name = "qoi"
