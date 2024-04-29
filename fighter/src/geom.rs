@@ -11,10 +11,61 @@ pub struct Rect {
     pub h: u16,
 }
 
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Circle {
     pub x: f32,
-    pub y: f32, 
+    pub y: f32,
     pub r: f32,
+}
+
+pub enum Shape {
+    Circle(Circle),
+    Rect(Rect),
+}
+
+impl Shape {
+    pub fn overlap(&self, other: Shape) -> Option<Vec2> {
+        match self {
+            Shape::Circle(s_circle) => match other {
+                Shape::Circle(o_circle) => s_circle.overlap(o_circle),
+                Shape::Rect(o_rect) => {
+                    let test_x: f32;
+                    let test_y: f32;
+
+                    if s_circle.x < o_rect.x {
+                        test_x = o_rect.x;
+                    }
+                    else if s_circle.x > o_rect.x + o_rect.w as f32 {
+                        test_x = o_rect.x + o_rect.w as f32;
+                    }
+
+                    if s_circle.y < o_rect.y {
+                        test_y = o_rect.y;
+                    }
+                    else if s_circle.y > o_rect.y + o_rect.h as f32 {
+                        test_y = o_rect.y + o_rect.h as f32;
+                    }
+
+                    let dist_x = s_circle.x - test_x;
+                    let dist_y = s_circle.y - test_y;
+                    let dist = f32::sqrt((dist_x * dist_x) + (dist_y * dist_y));
+
+                    if dist <= s_circle.r {
+                        Some(Vec2 {
+                            x: s_circle.r - dist_x,
+                            y: s_circle.r - dist_y
+                        })
+                    } else {
+                        None
+                    }
+                }
+            },
+            Shape::Rect(s_rect) => match other {
+                Shape::Circle(o_circle) => {None}
+                Shape::Rect(o_rect) => s_rect.overlap(o_rect),
+            },
+        }
+    }
 }
 
 impl Rect {
@@ -52,8 +103,17 @@ impl Rect {
 }
 
 impl Circle {
+    pub fn new() -> Circle {
+        Circle {
+            x: 0.0,
+            y: 0.0,
+            r: 0.0,
+        }
+    }
     pub fn overlap(&self, other: Circle) -> Option<Vec2> {
-        let distance_sq = f32::abs((self.x - other.x) * (self.x - other.x) + (self.y - other.y) * (self.y - other.y)); 
+        let distance_sq = f32::abs(
+            (self.x - other.x) * (self.x - other.x) + (self.y - other.y) * (self.y - other.y),
+        );
         let radius_sq = (self.r + other.r) * (self.r + other.r);
 
         if distance_sq < radius_sq {
@@ -63,30 +123,26 @@ impl Circle {
             let x_overlap = midpoint_x - self.x;
             let y_overlap = midpoint_y - self.y;
 
-            Some (Vec2 {
+            Some(Vec2 {
                 x: x_overlap,
-                y: y_overlap
+                y: y_overlap,
             })
-        }
-        else {
+        } else {
             None
         }
     }
-
     pub fn circ_to_pos(&self) -> Vec2 {
         Vec2 {
             x: self.x - self.r,
-            y: self.y - self.r
+            y: self.y - self.r,
         }
     }
-
     pub fn origin(&self) -> Vec2 {
         Vec2 {
             x: self.x,
-            y: self.y
+            y: self.y,
         }
     }
-
     pub fn is_empty(&self) -> bool {
         self.r == 0.0
     }

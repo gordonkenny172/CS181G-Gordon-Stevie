@@ -74,6 +74,13 @@ impl Entity {
             h: TILE_SZ as u16 - 4,
         }
     }
+    pub fn circle(&self) -> Circle {
+        Circle {
+            x: self.pos.x,
+            y: self.pos.y,
+            r: TILE_SZ as f32 / 2.0,
+        }
+    }
     pub fn transform(&self) -> Transform {
         if self.etype == EntityType::Projectile {
             Transform {
@@ -183,6 +190,59 @@ fn gather_level_contacts(objs: &Vec<Rect>, level: &Level) -> Vec<Contact> {
     contacts
 }
 
+struct Contact2 {
+    a_i: usize,
+    a_r: Shape,
+    b_i: usize,
+    b_r: Shape,
+    displacement: Vec2,
+}
+
+fn gather_contacts_2(objs_a: &Vec<Shape>, objs_b: &Vec<Shape>) -> Vec<Contact2> {
+    let mut contacts: Vec<Contact2> = Vec::new();
+
+    for (a_idx, a_shape) in objs_a.iter().enumerate() {
+        for (b_idx, b_shape) in objs_b.iter().enumerate() {
+            if let Some(overlap) = a_shape.overlap(*b_shape) {
+                contacts.push(Contact2 {
+                    a_i: a_idx,
+                    a_r: *a_shape,
+                    b_i: b_idx,
+                    b_r: *b_shape,
+                    displacement: overlap,
+                })
+            }
+        }
+    }
+    contacts
+}
+
+fn gather_level_contacts_2(objs: &Vec<Shape>, level: &Level) -> Vec<Contact2> {
+    let mut contacts: Vec<Contact2> = Vec::new();
+
+
+    //edit tiles_within
+    for (a_idx, a_shape) in objs.iter().enumerate() {
+        for (b_idx, (b_rect, tile_data)) in level.tiles_within(*a_shape).enumerate() {
+            
+            let b_shape = Shape::Rect(b_rect);
+            
+            if tile_data.solid {
+                if let Some(overlap) = a_shape.overlap(b_shape) {
+                    contacts.push(Contact2 {
+                        a_i: a_idx,
+                        a_r: *a_shape,
+                        b_i: b_idx,
+                        b_r: b_shape,
+                        displacement: overlap,
+                    });
+                }
+            }
+        }
+    }
+    contacts
+}
+
 impl Game {
     fn do_collision_response(&mut self, contacts: &mut Vec<Contact>) {
         for contact in contacts.iter_mut() {
@@ -207,8 +267,6 @@ impl Game {
         }
     }
 
-
-
     //todo! Separate projectiles from entities
     fn projectile_level_response(&mut self, contacts: &mut Vec<Contact>) {
         for contact in contacts.iter_mut() {
@@ -221,7 +279,6 @@ impl Game {
             let b_pos = contact.b_r.rect_to_pos();
 
             if let Some(projectile) = self.projectiles.get_mut(contact.a_i) {
-                
                 let mut t_vec2 = dir_to_vec2(projectile.dir);
 
                 if projectile.pos.x < b_pos.x {
@@ -235,8 +292,7 @@ impl Game {
 
                 if contact.displacement.x != 0.0 {
                     t_vec2.x *= -1.0;
-                }
-                else if contact.displacement.y != 0.0 {
+                } else if contact.displacement.y != 0.0 {
                     t_vec2.y *= -1.0;
                 }
 
@@ -554,18 +610,20 @@ impl Game {
         //Collision Detection & Response:
         let player_rects: Vec<Rect> = self.entities.iter().map(|entity| entity.rect()).collect();
 
-        let projectile_rects: Vec<Rect> = self.projectiles
+        let projectile_circles: Vec<Circle> = self
+            .projectiles
             .iter()
-            .map(|projectile| projectile.rect())
+            .map(|projectile| projectile.circle())
             .collect();
 
         let mut player_level_contacts: Vec<Contact> =
             gather_level_contacts(&player_rects, self.level());
 
         let mut projectile_player_contacts: Vec<Contact> =
-            gather_contacts(&projectile_rects, &player_rects);
+            gather_contacts(&projectile_circles, &player_rects);
 
-        let mut projectile_level_contacts: Vec<Contact> = gather_level_contacts(&projectile_rects, self.level());
+        let mut projectile_level_contacts: Vec<Contact> =
+            gather_level_contacts(&projectile_circles, self.level());
 
         player_level_contacts.sort_by(|a, b| {
             b.displacement
@@ -577,6 +635,5 @@ impl Game {
         self.do_collision_response(&mut player_level_contacts);
         self.kill_player(&mut projectile_player_contacts);
         self.projectile_level_response(&mut projectile_level_contacts);
-
     }
 }
