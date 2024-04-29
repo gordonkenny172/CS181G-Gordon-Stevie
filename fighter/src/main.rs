@@ -537,7 +537,7 @@ impl Game {
         self.entities[0].dir += d_angle;
         self.entities[1].dir += d_angle2;
 
-        if self.p1_attack_timer <= 0.0 && input.is_key_pressed(Key::Space) {
+        if self.p1_attack_timer <= 0.0 && input.is_key_pressed(Key::Space) && self.entities[0].alive {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
             self.projectiles.push(Entity {
@@ -554,7 +554,7 @@ impl Game {
             self.p1_attack_timer = ATTACK_MAX_TIME;
         }
 
-        if self.p2_attack_timer <= 0.0 && input.is_key_pressed(Key::KeyQ) {
+        if self.p2_attack_timer <= 0.0 && input.is_key_pressed(Key::KeyQ) && self.entities[1].alive{
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
             self.projectiles.push(Entity {

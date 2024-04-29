@@ -29,8 +29,8 @@ impl Shape {
             Shape::Circle(s_circle) => match other {
                 Shape::Circle(o_circle) => s_circle.overlap(o_circle),
                 Shape::Rect(o_rect) => {
-                    let test_x: f32;
-                    let test_y: f32;
+                    let mut test_x: f32 = s_circle.x;
+                    let mut test_y: f32 = s_circle.y;
 
                     if s_circle.x < o_rect.x {
                         test_x = o_rect.x;
