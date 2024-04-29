@@ -18,6 +18,7 @@ pub struct Circle {
     pub r: f32,
 }
 
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Shape {
     Circle(Circle),
     Rect(Rect),
@@ -59,7 +60,36 @@ impl Shape {
                 }
             },
             Shape::Rect(s_rect) => match other {
-                Shape::Circle(o_circle) => None,
+                // redundant code for now - same as above but flipped
+                Shape::Circle(o_circle) => {
+                    let mut test_x: f32 = o_circle.x;
+                    let mut test_y: f32 = o_circle.y;
+
+                    if o_circle.x < s_rect.x {
+                        test_x = s_rect.x;
+                    } else if o_circle.x > s_rect.x + s_rect.w as f32 {
+                        test_x = s_rect.x + s_rect.w as f32;
+                    }
+
+                    if o_circle.y < s_rect.y {
+                        test_y = s_rect.y;
+                    } else if o_circle.y > s_rect.y + s_rect.h as f32 {
+                        test_y = s_rect.y + s_rect.h as f32;
+                    }
+
+                    let dist_x = o_circle.x - test_x;
+                    let dist_y = o_circle.y - test_y;
+                    let dist = f32::sqrt((dist_x * dist_x) + (dist_y * dist_y));
+
+                    if dist <= o_circle.r {
+                        Some(Vec2 {
+                            x: o_circle.r - dist_x,
+                            y: o_circle.r - dist_y,
+                        })
+                    } else {
+                        None
+                    }
+                },
                 Shape::Rect(o_rect) => s_rect.overlap(o_rect),
             },
         }

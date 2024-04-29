@@ -81,6 +81,21 @@ impl Entity {
             r: TILE_SZ as f32 / 2.0,
         }
     }
+    pub fn shape_rect(&self) -> Shape {
+        Shape::Rect(Rect {
+            x: self.pos.x - TILE_SZ as f32 / 2.0 + 2.0,
+            y: self.pos.y - TILE_SZ as f32 / 2.0 + 2.0,
+            w: TILE_SZ as u16 - 4,
+            h: TILE_SZ as u16 - 4,
+        })
+    }
+    pub fn shape_circle(&self) -> Shape {
+        Shape::Circle(Circle {
+            x: self.pos.x,
+            y: self.pos.y,
+            r: TILE_SZ as f32 / 2.0,
+        })
+    }
     pub fn transform(&self) -> Transform {
         if self.etype == EntityType::Projectile {
             Transform {
@@ -198,48 +213,66 @@ struct Contact2 {
     displacement: Vec2,
 }
 
-// fn gather_contacts_2(objs_a: &Vec<Shape>, objs_b: &Vec<Shape>) -> Vec<Contact2> {
-//     let mut contacts: Vec<Contact2> = Vec::new();
+fn gather_contacts_2(objs_a: &Vec<Shape>, objs_b: &Vec<Shape>) -> Vec<Contact2> {
+    let mut contacts: Vec<Contact2> = Vec::new();
 
-//     for (a_idx, a_shape) in objs_a.iter().enumerate() {
-//         for (b_idx, b_shape) in objs_b.iter().enumerate() {
-//             if let Some(overlap) = a_shape.overlap(*b_shape) {
-//                 contacts.push(Contact2 {
-//                     a_i: a_idx,
-//                     a_r: *a_shape,
-//                     b_i: b_idx,
-//                     b_r: *b_shape,
-//                     displacement: overlap,
-//                 })
-//             }
-//         }
-//     }
-//     contacts
-// }
+    for (a_idx, a_shape) in objs_a.iter().enumerate() {
+        for (b_idx, b_shape) in objs_b.iter().enumerate() {
+            if let Some(overlap) = a_shape.overlap(*b_shape) {
+                contacts.push(Contact2 {
+                    a_i: a_idx,
+                    a_r: *a_shape,
+                    b_i: b_idx,
+                    b_r: *b_shape,
+                    displacement: overlap,
+                })
+            }
+        }
+    }
+    contacts
+}
 
-// fn gather_level_contacts_2(objs: &Vec<Shape>, level: &Level) -> Vec<Contact2> {
-//     let mut contacts: Vec<Contact2> = Vec::new();
+fn gather_level_contacts_2(objs: &Vec<Shape>, level: &Level) -> Vec<Contact2> {
+    let mut contacts: Vec<Contact2> = Vec::new();
+    let mut a_rect: Rect;
 
-//     //edit tiles_within
-//     for (a_idx, a_shape) in objs.iter().enumerate() {
-//         for (b_idx, (b_rect, tile_data)) in level.tiles_within(*a_shape).enumerate() {
-//             let b_shape = Shape::Rect(b_rect);
+    //edit tiles_within
+    for (a_idx, a_shape) in objs.iter().enumerate() {
 
-//             if tile_data.solid {
-//                 if let Some(overlap) = a_shape.overlap(b_shape) {
-//                     contacts.push(Contact2 {
-//                         a_i: a_idx,
-//                         a_r: *a_shape,
-//                         b_i: b_idx,
-//                         b_r: b_shape,
-//                         displacement: overlap,
-//                     });
-//                 }
-//             }
-//         }
-//     }
-//     contacts
-// }
+        match a_shape {
+            Shape::Circle(circle) => {
+                let t_vec2 = circle.circ_to_pos();
+                
+                a_rect = Rect {
+                    x: t_vec2.x,
+                    y: t_vec2.y,
+                    w: circle.r as u16 * 2,
+                    h: circle.r as u16 * 2
+                };
+            }
+            Shape::Rect(rect) => {
+                a_rect = *rect;
+            }
+        }
+
+        for (b_idx, (b_rect, tile_data)) in level.tiles_within(a_rect).enumerate() {
+            let b_shape = Shape::Rect(b_rect);
+
+            if tile_data.solid {
+                if let Some(overlap) = a_shape.overlap(b_shape) {
+                    contacts.push(Contact2 {
+                        a_i: a_idx,
+                        a_r: *a_shape,
+                        b_i: b_idx,
+                        b_r: b_shape,
+                        displacement: overlap,
+                    });
+                }
+            }
+        }
+    }
+    contacts
+}
 
 impl Game {
     fn do_collision_response(&mut self, contacts: &mut Vec<Contact>) {
@@ -266,7 +299,7 @@ impl Game {
     }
 
     //todo! Separate projectiles from entities
-    fn projectile_level_response(&mut self, contacts: &mut Vec<Contact>) {
+    fn projectile_level_response(&mut self, contacts: &mut Vec<Contact2>) {
         for contact in contacts.iter_mut() {
             if contact.displacement.x < contact.displacement.y {
                 contact.displacement.y = 0.0;
@@ -274,7 +307,16 @@ impl Game {
                 contact.displacement.x = 0.0;
             }
 
-            let b_pos = contact.b_r.rect_to_pos();
+            let mut b_pos: Vec2;
+
+            match contact.b_r {
+                Shape::Rect(rect) => {
+                    b_pos = rect.rect_to_pos();
+                }
+                Shape::Circle(circle) => {
+                    b_pos = circle.origin();
+                }
+            }
 
             if let Some(projectile) = self.projectiles.get_mut(contact.a_i) {
                 let mut t_vec2 = dir_to_vec2(projectile.dir);
@@ -300,7 +342,7 @@ impl Game {
         }
     }
 
-    fn kill_player(&mut self, player_contacts: &mut Vec<Contact>) {
+    fn kill_player(&mut self, player_contacts: &mut Vec<Contact2>) {
         for contact in player_contacts.iter_mut() {
             if contact.b_i == 0 {
                 self.entities[0].alive = false;
@@ -607,21 +649,22 @@ impl Game {
 
         //Collision Detection & Response:
         let player_rects: Vec<Rect> = self.entities.iter().map(|entity| entity.rect()).collect();
+        let player_shapes: Vec<Shape> = self.entities.iter().map(|entity| entity.shape_rect()).collect();
 
-        let projectile_circles: Vec<Rect> = self
+        let projectile_circles: Vec<Shape> = self
             .projectiles
             .iter()
-            .map(|projectile| projectile.rect())
+            .map(|projectile| projectile.shape_circle())
             .collect();
 
         let mut player_level_contacts: Vec<Contact> =
             gather_level_contacts(&player_rects, self.level());
 
-        let mut projectile_player_contacts: Vec<Contact> =
-            gather_contacts(&projectile_circles, &player_rects);
+        let mut projectile_player_contacts: Vec<Contact2> =
+            gather_contacts_2(&projectile_circles, &player_shapes);
 
-        let mut projectile_level_contacts: Vec<Contact> =
-            gather_level_contacts(&projectile_circles, self.level());
+        let mut projectile_level_contacts: Vec<Contact2> =
+            gather_level_contacts_2(&projectile_circles, self.level());
 
         player_level_contacts.sort_by(|a, b| {
             b.displacement
