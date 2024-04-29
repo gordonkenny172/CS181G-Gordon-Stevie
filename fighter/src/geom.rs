@@ -72,6 +72,24 @@ impl Circle {
             None
         }
     }
+
+    pub fn circ_to_pos(&self) -> Vec2 {
+        Vec2 {
+            x: self.x - self.r,
+            y: self.y - self.r
+        }
+    }
+
+    pub fn origin(&self) -> Vec2 {
+        Vec2 {
+            x: self.x,
+            y: self.y
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.r == 0.0
+    }
 }
 
 impl std::ops::Add for Vec2 {
