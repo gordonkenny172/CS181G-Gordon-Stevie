@@ -89,7 +89,7 @@ impl Shape {
                     } else {
                         None
                     }
-                },
+                }
                 Shape::Rect(o_rect) => s_rect.overlap(o_rect),
             },
         }
