@@ -12,9 +12,11 @@ use geom::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum EntityType {
-    Player,
+    Player1,
+    Player2,
     Enemy,
-    Projectile,
+    P_Projectile,
+    E_Projectile,
     // which level, grid x in dest level, grid y in dest level
     #[allow(dead_code)]
     Door(String, u16, u16),
@@ -32,9 +34,9 @@ const PLAYER2: SheetRegion = SheetRegion::rect(315, 100, 16, 16);
 
 const ENEMY: SheetRegion = SheetRegion::rect(533 + 16, 39, 16, 16);
 
-const P1_PROJECTILE: SheetRegion = SheetRegion::rect(525, 19, 7, 7);
+const P_PROJECTILE: SheetRegion = SheetRegion::rect(525, 19, 7, 7);
 
-const P2_PROJECTILE: SheetRegion = SheetRegion::rect(525, 43, 7, 7);
+const E_PROJECTILE: SheetRegion = SheetRegion::rect(525, 43, 7, 7);
 
 const HEART: SheetRegion = SheetRegion::rect(525, 35, 8, 8);
 
@@ -97,7 +99,7 @@ impl Entity {
         })
     }
     pub fn transform(&self) -> Transform {
-        if self.etype == EntityType::Projectile {
+        if self.etype == EntityType::P_Projectile || self.etype == EntityType::E_Projectile{
             Transform {
                 x: self.pos.x,
                 y: self.pos.y,
@@ -117,9 +119,11 @@ impl Entity {
     }
     pub fn uv(&self) -> SheetRegion {
         match self.etype {
-            EntityType::Player => PLAYER,
+            EntityType::Player1 => PLAYER,
+            EntityType::Player2 => PLAYER,
             EntityType::Enemy => ENEMY,
-            EntityType::Projectile => P1_PROJECTILE,
+            EntityType::P_Projectile => P_PROJECTILE,
+            EntityType::E_Projectile => E_PROJECTILE,
             _ => panic!("can't draw doors"),
         }
         .with_depth(1)
@@ -451,13 +455,14 @@ impl Game {
         let player_start = *levels[current_level]
             .starts()
             .iter()
-            .find(|(t, _)| *t == EntityType::Player)
+            .find(|(t, _)| *t == EntityType::Player1)
             .map(|(_, ploc)| ploc)
             .expect("Start level doesn't put the player anywhere");
+
         let player2_start = *levels[current_level]
             .starts()
             .iter()
-            .find(|(t, _)| *t == EntityType::Player)
+            .find(|(t, _)| *t == EntityType::Player2)
             .map(|(_, ploc)| ploc)
             .expect("Start level doesn't put the player anywhere");
 
@@ -472,13 +477,13 @@ impl Game {
             entities: vec![
                 Entity {
                     alive: true,
-                    etype: EntityType::Player,
+                    etype: EntityType::Player1,
                     pos: player_start,
                     dir: 0.0,
                 },
                 Entity {
                     alive: true,
-                    etype: EntityType::Player,
+                    etype: EntityType::Player2,
                     pos: player2_start,
                     dir: 0.0,
                 },
@@ -498,7 +503,8 @@ impl Game {
         self.entities[1].pos = player2_pos;
         for (etype, pos) in self.levels[self.current_level].starts().iter() {
             match etype {
-                EntityType::Player => {}
+                EntityType::Player1 => {}
+                EntityType::Player2 => {}
                 EntityType::Door(_rm, _x, _y) => todo!("doors not supported"),
                 EntityType::Enemy => self.entities.push(Entity {
                     alive: true,
@@ -506,7 +512,8 @@ impl Game {
                     dir: 270.0,
                     etype: etype.clone(),
                 }),
-                EntityType::Projectile => {}
+                EntityType::P_Projectile => {}
+                EntityType::E_Projectile => {}
             }
         }
     }
@@ -581,7 +588,7 @@ impl Game {
                 // how to put the bullet at the top of the tank so it doesnt kill itself
                 pos: self.entities[0].pos + dir_to_vec2(self.entities[0].dir) * 15.0,
                 dir: self.entities[0].dir,
-                etype: EntityType::Projectile,
+                etype: EntityType::P_Projectile,
             });
 
             self.bounce.push(3);
@@ -597,7 +604,7 @@ impl Game {
                 alive: true,
                 pos: self.entities[1].pos + dir_to_vec2(self.entities[1].dir) * 15.0,
                 dir: self.entities[1].dir,
-                etype: EntityType::Projectile,
+                etype: EntityType::P_Projectile,
             });
 
             self.bounce.push(3);
