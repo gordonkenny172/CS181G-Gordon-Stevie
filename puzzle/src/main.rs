@@ -24,6 +24,7 @@ enum EntityType {
 struct TileData {
     solid: bool,
     sheet_region: SheetRegion,
+    slippery: bool,
 }
 
 const PLAYER: SheetRegion = SheetRegion::rect(296, 119, 25, 20);

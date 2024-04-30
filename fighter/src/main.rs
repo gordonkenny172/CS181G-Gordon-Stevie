@@ -232,6 +232,7 @@ fn gather_contacts_2(objs_a: &Vec<Shape>, objs_b: &Vec<Shape>) -> Vec<Contact2> 
     contacts
 }
 
+// bounce works on left and bot walls
 fn gather_level_contacts_2(objs: &Vec<Shape>, level: &Level) -> Vec<Contact2> {
     let mut contacts: Vec<Contact2> = Vec::new();
     let mut a_rect: Rect;
