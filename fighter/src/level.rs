@@ -158,7 +158,8 @@ impl Level {
                             .next()
                             .expect("Couldn't get entity start type {line}");
                         let etype = match etype {
-                            "player" => EntityType::Player,
+                            "player1" => EntityType::Player1,
+                            "player2" => EntityType::Player2,
                             "enemy" => EntityType::Enemy,
                             "door" => {
                                 let to_room = chunks.next().expect("Couldn't get dest room {line}");

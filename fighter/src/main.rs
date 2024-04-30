@@ -12,7 +12,8 @@ use geom::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum EntityType {
-    Player,
+    Player1,
+    Player2,
     Enemy,
     Projectile,
     // which level, grid x in dest level, grid y in dest level
@@ -117,7 +118,8 @@ impl Entity {
     }
     pub fn uv(&self) -> SheetRegion {
         match self.etype {
-            EntityType::Player => PLAYER,
+            EntityType::Player1 => PLAYER,
+            EntityType::Player2 => PLAYER2,
             EntityType::Enemy => ENEMY,
             EntityType::Projectile => P1_PROJECTILE,
             _ => panic!("can't draw doors"),
@@ -300,7 +302,7 @@ impl Game {
     }
 
     //todo! Separate projectiles from entities
-    fn projectile_level_response(&mut self, contacts: &mut Vec<Contact2>) {
+    fn projectile_level_response(&mut self, contacts: &mut Vec<Contact>) {
         for contact in contacts.iter_mut() {
             if contact.displacement.x < contact.displacement.y {
                 contact.displacement.y = 0.0;
@@ -308,16 +310,16 @@ impl Game {
                 contact.displacement.x = 0.0;
             }
 
-            let mut b_pos: Vec2;
+            let b_pos: Vec2 = contact.b_r.rect_to_pos();
 
-            match contact.b_r {
-                Shape::Rect(rect) => {
-                    b_pos = rect.rect_to_pos();
-                }
-                Shape::Circle(circle) => {
-                    b_pos = circle.origin();
-                }
-            }
+            // match contact.b_r {
+            //     Shape::Rect(rect) => {
+            //         b_pos = rect.rect_to_pos();
+            //     }
+            //     Shape::Circle(circle) => {
+            //         b_pos = circle.origin();
+            //     }
+            // }
 
             if let Some(projectile) = self.projectiles.get_mut(contact.a_i) {
                 let mut t_vec2 = dir_to_vec2(projectile.dir);
@@ -343,7 +345,7 @@ impl Game {
         }
     }
 
-    fn kill_player(&mut self, player_contacts: &mut Vec<Contact2>) {
+    fn kill_player(&mut self, player_contacts: &mut Vec<Contact>) {
         for contact in player_contacts.iter_mut() {
             if contact.b_i == 0 {
                 self.entities[0].alive = false;
@@ -461,13 +463,13 @@ impl Game {
         let player_start = *levels[current_level]
             .starts()
             .iter()
-            .find(|(t, _)| *t == EntityType::Player)
+            .find(|(t, _)| *t == EntityType::Player1)
             .map(|(_, ploc)| ploc)
             .expect("Start level doesn't put the player anywhere");
         let player2_start = *levels[current_level]
             .starts()
             .iter()
-            .find(|(t, _)| *t == EntityType::Player)
+            .find(|(t, _)| *t == EntityType::Player2)
             .map(|(_, ploc)| ploc)
             .expect("Start level doesn't put the player anywhere");
 
@@ -482,13 +484,13 @@ impl Game {
             entities: vec![
                 Entity {
                     alive: true,
-                    etype: EntityType::Player,
+                    etype: EntityType::Player1,
                     pos: player_start,
                     dir: 0.0,
                 },
                 Entity {
                     alive: true,
-                    etype: EntityType::Player,
+                    etype: EntityType::Player2,
                     pos: player2_start,
                     dir: 0.0,
                 },
@@ -507,7 +509,8 @@ impl Game {
         self.entities[1].pos = player2_pos;
         for (etype, pos) in self.levels[self.current_level].starts().iter() {
             match etype {
-                EntityType::Player => {}
+                EntityType::Player1 => {}
+                EntityType::Player2 => {}
                 EntityType::Door(_rm, _x, _y) => todo!("doors not supported"),
                 EntityType::Enemy => self.entities.push(Entity {
                     alive: true,
@@ -650,22 +653,21 @@ impl Game {
 
         //Collision Detection & Response:
         let player_rects: Vec<Rect> = self.entities.iter().map(|entity| entity.rect()).collect();
-        let player_shapes: Vec<Shape> = self.entities.iter().map(|entity| entity.shape_rect()).collect();
 
-        let projectile_circles: Vec<Shape> = self
+        let projectile_rects: Vec<Rect> = self
             .projectiles
             .iter()
-            .map(|projectile| projectile.shape_circle())
+            .map(|projectile| projectile.rect())
             .collect();
 
         let mut player_level_contacts: Vec<Contact> =
             gather_level_contacts(&player_rects, self.level());
 
-        let mut projectile_player_contacts: Vec<Contact2> =
-            gather_contacts_2(&projectile_circles, &player_shapes);
+        let mut projectile_player_contacts: Vec<Contact> =
+            gather_contacts(&projectile_rects, &player_rects);
 
-        let mut projectile_level_contacts: Vec<Contact2> =
-            gather_level_contacts_2(&projectile_circles, self.level());
+        let mut projectile_level_contacts: Vec<Contact> =
+            gather_level_contacts(&projectile_rects, self.level());
 
         player_level_contacts.sort_by(|a, b| {
             b.displacement

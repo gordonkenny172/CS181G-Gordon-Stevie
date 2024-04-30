@@ -16,8 +16,8 @@ bg 594 55 2 2
 * . . . . . . . . . . . . . *
 * * * * * * * * * * * * * * *
 ======
-player 1 7
-player 1 8
+player1 2 7
+player2 12 2
 enemy 1 1
 enemy 5 7
 enemy 8 1
