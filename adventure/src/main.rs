@@ -99,7 +99,7 @@ impl Entity {
         })
     }
     pub fn transform(&self) -> Transform {
-        if self.etype == EntityType::P_Projectile || self.etype == EntityType::E_Projectile{
+        if self.etype == EntityType::P_Projectile || self.etype == EntityType::E_Projectile {
             Transform {
                 x: self.pos.x,
                 y: self.pos.y,
@@ -135,13 +135,16 @@ struct Game {
     assets: AssetCache,
     current_level: usize,
     levels: Vec<Level>,
-    entities: Vec<Entity>,
+    players: Vec<Entity>,
+    enemies: Vec<Entity>,
     bounce: Vec<usize>,
     p_projectiles: Vec<Entity>,
     e_projectiles: Vec<Entity>,
+    e_attack_timer: f32,
     p1_attack_timer: f32,
     p2_attack_timer: f32,
-    health: u8,
+    p_health: Vec<u8>,
+    e_health: Vec<u8>,
 }
 
 // Feel free to change this if you use a different tilesheet
@@ -157,6 +160,7 @@ const KNOCKBACK_SPEED: f32 = 128.0;
 
 const ATTACK_MAX_TIME: f32 = 0.3;
 const ATTACK_COOLDOWN_TIME: f32 = 0.1;
+const ENEMY_ATTACK_COOLDOWN_TIME: f32 = 10.0;
 const KNOCKBACK_TIME: f32 = 0.25;
 
 const DT: f32 = 1.0 / 60.0;
@@ -210,76 +214,8 @@ fn gather_level_contacts(objs: &Vec<Rect>, level: &Level) -> Vec<Contact> {
     contacts
 }
 
-struct Contact2 {
-    a_i: usize,
-    a_r: Shape,
-    b_i: usize,
-    b_r: Shape,
-    displacement: Vec2,
-}
-
-fn gather_contacts_2(objs_a: &Vec<Shape>, objs_b: &Vec<Shape>) -> Vec<Contact2> {
-    let mut contacts: Vec<Contact2> = Vec::new();
-
-    for (a_idx, a_shape) in objs_a.iter().enumerate() {
-        for (b_idx, b_shape) in objs_b.iter().enumerate() {
-            if let Some(overlap) = a_shape.overlap(*b_shape) {
-                contacts.push(Contact2 {
-                    a_i: a_idx,
-                    a_r: *a_shape,
-                    b_i: b_idx,
-                    b_r: *b_shape,
-                    displacement: overlap,
-                })
-            }
-        }
-    }
-    contacts
-}
-
-fn gather_level_contacts_2(objs: &Vec<Shape>, level: &Level) -> Vec<Contact2> {
-    let mut contacts: Vec<Contact2> = Vec::new();
-    let mut a_rect: Rect;
-
-    //edit tiles_within
-    for (a_idx, a_shape) in objs.iter().enumerate() {
-        match a_shape {
-            Shape::Circle(circle) => {
-                let t_vec2 = circle.circ_to_pos();
-
-                a_rect = Rect {
-                    x: t_vec2.x,
-                    y: t_vec2.y,
-                    w: circle.r as u16 * 2,
-                    h: circle.r as u16 * 2,
-                };
-            }
-            Shape::Rect(rect) => {
-                a_rect = *rect;
-            }
-        }
-
-        for (b_idx, (b_rect, tile_data)) in level.tiles_within(a_rect).enumerate() {
-            let b_shape = Shape::Rect(b_rect);
-
-            if tile_data.solid {
-                if let Some(overlap) = a_shape.overlap(b_shape) {
-                    contacts.push(Contact2 {
-                        a_i: a_idx,
-                        a_r: *a_shape,
-                        b_i: b_idx,
-                        b_r: b_shape,
-                        displacement: overlap,
-                    });
-                }
-            }
-        }
-    }
-    contacts
-}
-
 impl Game {
-    fn do_collision_response(&mut self, contacts: &mut Vec<Contact>) {
+    fn player_level_collision_response(&mut self, contacts: &mut Vec<Contact>) {
         for contact in contacts.iter_mut() {
             if contact.displacement.x < contact.displacement.y {
                 contact.displacement.y = 0.0;
@@ -289,7 +225,29 @@ impl Game {
 
             let b_pos = contact.b_r.rect_to_pos();
 
-            if let Some(entity) = self.entities.get_mut(contact.a_i) {
+            if let Some(entity) = self.players.get_mut(contact.a_i) {
+                if entity.pos.x < b_pos.x {
+                    contact.displacement.x *= -1.0;
+                }
+                if entity.pos.y < b_pos.y {
+                    contact.displacement.y *= -1.0;
+                }
+
+                entity.pos += contact.displacement;
+            }
+        }
+    }
+    fn enemy_level_collision_response(&mut self, contacts: &mut Vec<Contact>) {
+        for contact in contacts.iter_mut() {
+            if contact.displacement.x < contact.displacement.y {
+                contact.displacement.y = 0.0;
+            } else {
+                contact.displacement.x = 0.0;
+            }
+
+            let b_pos = contact.b_r.rect_to_pos();
+
+            if let Some(entity) = self.enemies.get_mut(contact.a_i) {
                 if entity.pos.x < b_pos.x {
                     contact.displacement.x *= -1.0;
                 }
@@ -303,7 +261,7 @@ impl Game {
     }
 
     //todo! Separate projectiles from entities
-    fn projectile_level_response(&mut self, contacts: &mut Vec<Contact>) {
+    fn p_projectile_level_response(&mut self, contacts: &mut Vec<Contact>) {
         for contact in contacts.iter_mut() {
             if contact.displacement.x < contact.displacement.y {
                 contact.displacement.y = 0.0;
@@ -311,7 +269,7 @@ impl Game {
                 contact.displacement.x = 0.0;
             }
 
-            let mut b_pos: Vec2 = contact.b_r.rect_to_pos();
+            let b_pos: Vec2 = contact.b_r.rect_to_pos();
 
             if let Some(projectile) = self.p_projectiles.get_mut(contact.a_i) {
                 let mut t_vec2 = dir_to_vec2(projectile.dir);
@@ -337,14 +295,55 @@ impl Game {
         }
     }
 
-    fn kill_player(&mut self, player_contacts: &mut Vec<Contact>) {
-        for contact in player_contacts.iter_mut() {
-            if contact.b_i == 0 {
-                self.entities[0].alive = false;
+    fn e_projectile_level_response(&mut self, contacts: &mut Vec<Contact>) {
+        for contact in contacts.iter_mut() {
+            if contact.displacement.x < contact.displacement.y {
+                contact.displacement.y = 0.0;
+            } else {
+                contact.displacement.x = 0.0;
             }
-            if contact.b_i == 1 {
-                self.entities[1].alive = false;
+
+            let b_pos: Vec2 = contact.b_r.rect_to_pos();
+
+            if let Some(projectile) = self.e_projectiles.get_mut(contact.a_i) {
+                let mut t_vec2 = dir_to_vec2(projectile.dir);
+
+                if projectile.pos.x < b_pos.x {
+                    contact.displacement.x *= -1.0;
+                }
+                if projectile.pos.y < b_pos.y {
+                    contact.displacement.y *= -1.0;
+                }
+
+                //now bounce
+
+                if contact.displacement.x != 0.0 {
+                    t_vec2.x *= -1.0;
+                } else if contact.displacement.y != 0.0 {
+                    t_vec2.y *= -1.0;
+                }
+
+                projectile.pos += contact.displacement;
+                projectile.dir = vec2_to_dir(t_vec2);
             }
+        }
+    }
+
+    fn damage_player(&mut self, entity_contacts: &mut Vec<Contact>) {
+        for contact in entity_contacts.iter_mut() {
+            if self.p_health[contact.b_i] > 0 {
+                self.p_health[contact.b_i] -= 1;
+            }
+
+            self.e_projectiles[contact.a_i].alive = false;
+        }
+    }
+    fn damage_enemy(&mut self, entity_contacts: &mut Vec<Contact>) {
+        for contact in entity_contacts.iter_mut() {
+            if self.e_health[contact.b_i] > 0 {
+                self.e_health[contact.b_i] -= 1;
+            }
+            self.p_projectiles[contact.a_i].alive = false;
         }
     }
 }
@@ -471,10 +470,11 @@ impl Game {
             current_level,
             p1_attack_timer: 0.0,
             p2_attack_timer: 0.0,
+            e_attack_timer: 0.0,
             bounce: Vec::new(),
             levels,
-            health: 3,
-            entities: vec![
+            p_health: vec![1, 1],
+            players: vec![
                 Entity {
                     alive: true,
                     etype: EntityType::Player1,
@@ -488,6 +488,8 @@ impl Game {
                     dir: 0.0,
                 },
             ],
+            e_health: Vec::new(),
+            enemies: Vec::new(),
             p_projectiles: Vec::new(),
             e_projectiles: Vec::new(),
         };
@@ -498,20 +500,25 @@ impl Game {
         &self.levels[self.current_level]
     }
     fn enter_level(&mut self, player_pos: Vec2, player2_pos: Vec2) {
-        self.entities.truncate(2);
-        self.entities[0].pos = player_pos;
-        self.entities[1].pos = player2_pos;
+        self.players.truncate(2);
+        self.players[0].pos = player_pos;
+        self.players[1].pos = player2_pos;
         for (etype, pos) in self.levels[self.current_level].starts().iter() {
             match etype {
                 EntityType::Player1 => {}
                 EntityType::Player2 => {}
                 EntityType::Door(_rm, _x, _y) => todo!("doors not supported"),
-                EntityType::Enemy => self.entities.push(Entity {
-                    alive: true,
-                    pos: *pos,
-                    dir: 270.0,
-                    etype: etype.clone(),
-                }),
+                EntityType::Enemy => {
+                    // enemies have health of 3
+                    self.e_health.push(3);
+
+                    self.enemies.push(Entity {
+                        alive: true,
+                        pos: *pos,
+                        dir: 270.0,
+                        etype: etype.clone(),
+                    })
+                }
                 EntityType::P_Projectile => {}
                 EntityType::E_Projectile => {}
             }
@@ -520,20 +527,25 @@ impl Game {
     fn render(&mut self, frend: &mut Immediate) {
         self.level().render_immediate(frend);
 
-        if self.entities[0].alive {
-            frend.draw_sprite(0, self.entities[0].transform(), PLAYER);
-        }
-        if self.entities[1].alive {
-            frend.draw_sprite(0, self.entities[1].transform(), PLAYER2);
+        for (p_i, player) in self.players.iter().enumerate() {
+            if self.p_health[p_i] > 0 {
+                frend.draw_sprite(0, self.players[p_i].transform(), PLAYER);
+            }
         }
 
-        for entity in self.entities[2..].iter() {
-            if entity.alive {
-                frend.draw_sprite(0, entity.transform(), entity.uv());
+        for (e_i, enemy) in self.enemies.iter().enumerate() {
+            if self.e_health[e_i] > 0 {
+                frend.draw_sprite(0, self.enemies[e_i].transform(), enemy.uv());
             }
         }
 
         for (p_i, projectile) in self.p_projectiles.iter().enumerate() {
+            if projectile.alive {
+                frend.draw_sprite(0, projectile.transform(), projectile.uv());
+            }
+        }
+
+        for (p_i, projectile) in self.e_projectiles.iter().enumerate() {
             if projectile.alive {
                 frend.draw_sprite(0, projectile.transform(), projectile.uv());
             }
@@ -559,6 +571,9 @@ impl Game {
         if self.p2_attack_timer > 0.0 {
             self.p2_attack_timer -= dt;
         }
+        if self.e_attack_timer > 0.0 {
+            self.e_attack_timer -= dt;
+        }
 
         let mut d_angle: f32 = 0.0;
         let mut d_angle2: f32 = 0.0;
@@ -575,19 +590,18 @@ impl Game {
             d_angle2 -= ROTATE_SPEED;
         }
 
-        self.entities[0].dir += d_angle;
-        self.entities[1].dir += d_angle2;
+        self.players[0].dir += d_angle;
+        self.players[1].dir += d_angle2;
 
-        if self.p1_attack_timer <= 0.0 && input.is_key_pressed(Key::Space) && self.entities[0].alive
-        {
+        if self.p1_attack_timer <= 0.0 && input.is_key_pressed(Key::Space) && self.p_health[0] > 0 {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
             self.p_projectiles.push(Entity {
                 alive: true,
 
                 // how to put the bullet at the top of the tank so it doesnt kill itself
-                pos: self.entities[0].pos + dir_to_vec2(self.entities[0].dir) * 15.0,
-                dir: self.entities[0].dir,
+                pos: self.players[0].pos + dir_to_vec2(self.players[0].dir) * 15.0,
+                dir: self.players[0].dir,
                 etype: EntityType::P_Projectile,
             });
 
@@ -596,14 +610,13 @@ impl Game {
             self.p1_attack_timer = ATTACK_MAX_TIME;
         }
 
-        if self.p2_attack_timer <= 0.0 && input.is_key_pressed(Key::KeyQ) && self.entities[1].alive
-        {
+        if self.p2_attack_timer <= 0.0 && input.is_key_pressed(Key::KeyQ) && self.p_health[1] > 0 {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
             self.p_projectiles.push(Entity {
                 alive: true,
-                pos: self.entities[1].pos + dir_to_vec2(self.entities[1].dir) * 15.0,
-                dir: self.entities[1].dir,
+                pos: self.players[1].pos + dir_to_vec2(self.players[1].dir) * 15.0,
+                dir: self.players[1].dir,
                 etype: EntityType::P_Projectile,
             });
 
@@ -612,26 +625,43 @@ impl Game {
             self.p2_attack_timer = ATTACK_MAX_TIME;
         }
 
-        let mut dest = self.entities[0].pos;
-        let mut dest2 = self.entities[1].pos;
+        if self.e_attack_timer <= 0.0 {
+            for (e_i, enemy) in self.enemies.iter().enumerate() {
+                if self.e_health[e_i] > 0 {
+                    self.e_projectiles.push(Entity {
+                        alive: true,
+                        pos: self.enemies[e_i].pos + dir_to_vec2(self.enemies[e_i].dir) * 15.0,
+                        dir: self.enemies[e_i].dir,
+                        etype: EntityType::E_Projectile,
+                    });
+    
+                    self.bounce.push(3);
+                }
+            }
+
+            self.e_attack_timer = ENEMY_ATTACK_COOLDOWN_TIME;
+        }
+
+        let mut dest = self.players[0].pos;
+        let mut dest2 = self.players[1].pos;
 
         if input.is_key_down(Key::ArrowUp) {
-            dest += dir_to_vec2(self.entities[0].dir);
+            dest += dir_to_vec2(self.players[0].dir);
         } else if input.is_key_down(Key::ArrowDown) {
-            dest += dir_to_vec2(self.entities[0].dir) * -1.0;
+            dest += dir_to_vec2(self.players[0].dir) * -1.0;
         }
 
         if input.is_key_down(Key::KeyW) {
-            dest2 += dir_to_vec2(self.entities[1].dir);
+            dest2 += dir_to_vec2(self.players[1].dir);
         } else if input.is_key_down(Key::KeyS) {
-            dest2 += dir_to_vec2(self.entities[1].dir) * -1.0;
+            dest2 += dir_to_vec2(self.players[1].dir) * -1.0;
         }
 
-        self.entities[0].pos = dest;
-        self.entities[1].pos = dest2;
+        self.players[0].pos = dest;
+        self.players[1].pos = dest2;
 
         let mut rng = rand::thread_rng();
-        for enemy in self.entities[2..5].iter_mut() {
+        for enemy in self.enemies.iter_mut() {
             if rng.gen_bool(0.05) {
                 enemy.dir = match rng.gen_range(0..4) {
                     0 => 180.0,
@@ -648,23 +678,37 @@ impl Game {
             projectile.pos += dir_to_vec2(projectile.dir);
         }
 
-        //Collision Detection & Response:
-        let player_rects: Vec<Rect> = self.entities.iter().map(|entity| entity.rect()).collect();
+        for projectile in self.e_projectiles.iter_mut() {
+            projectile.pos += dir_to_vec2(projectile.dir);
+        }
 
-        let projectile_rect: Vec<Rect> = self
+        // Collision Detection & Response:
+
+        // Create all rectangles first:
+
+        let player_rects: Vec<Rect> = self.players.iter().map(|entity| entity.rect()).collect();
+
+        let enemy_rects: Vec<Rect> = self.enemies.iter().map(|entity| entity.rect()).collect();
+
+        let player_projectile_rect: Vec<Rect> = self
             .p_projectiles
             .iter()
             .map(|projectile| projectile.rect())
             .collect();
 
+        let enemy_projectile_rect: Vec<Rect> = self
+            .e_projectiles
+            .iter()
+            .map(|projectile| projectile.rect())
+            .collect();
+
+        // Contacts
+
         let mut player_level_contacts: Vec<Contact> =
             gather_level_contacts(&player_rects, self.level());
 
-        let mut projectile_player_contacts: Vec<Contact> =
-            gather_contacts(&projectile_rect, &player_rects);
-
-        let mut projectile_level_contacts: Vec<Contact> =
-            gather_level_contacts(&projectile_rect, self.level());
+        let mut enemy_level_contacts: Vec<Contact> =
+            gather_level_contacts(&enemy_rects, self.level());
 
         player_level_contacts.sort_by(|a, b| {
             b.displacement
@@ -673,8 +717,46 @@ impl Game {
                 .unwrap()
         });
 
-        self.do_collision_response(&mut player_level_contacts);
-        self.kill_player(&mut projectile_player_contacts);
-        self.projectile_level_response(&mut projectile_level_contacts);
+        enemy_level_contacts.sort_by(|a, b| {
+            b.displacement
+                .mag_sq()
+                .partial_cmp(&a.displacement.mag_sq())
+                .unwrap()
+        });
+
+        let mut p_projectile_level_contacts: Vec<Contact> =
+            gather_level_contacts(&player_projectile_rect, self.level());
+
+        let mut e_projectile_level_contacts: Vec<Contact> =
+            gather_level_contacts(&enemy_projectile_rect, self.level());
+
+        p_projectile_level_contacts.sort_by(|a, b| {
+            b.displacement
+                .mag_sq()
+                .partial_cmp(&a.displacement.mag_sq())
+                .unwrap()
+        });
+
+        e_projectile_level_contacts.sort_by(|a, b| {
+            b.displacement
+                .mag_sq()
+                .partial_cmp(&a.displacement.mag_sq())
+                .unwrap()
+        });
+
+        let mut e_projectile_player_contacts: Vec<Contact> =
+            gather_contacts(&enemy_projectile_rect, &player_rects);
+
+        let mut p_projectile_enemy_contacts: Vec<Contact> =
+            gather_contacts(&player_projectile_rect, &enemy_rects);
+
+        self.player_level_collision_response(&mut player_level_contacts);
+        self.enemy_level_collision_response(&mut enemy_level_contacts);
+
+        self.p_projectile_level_response(&mut p_projectile_level_contacts);
+        self.e_projectile_level_response(&mut e_projectile_level_contacts);
+
+        self.damage_player(&mut e_projectile_player_contacts);
+        self.damage_enemy(&mut p_projectile_enemy_contacts);
     }
 }
