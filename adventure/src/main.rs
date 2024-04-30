@@ -26,9 +26,9 @@ struct TileData {
     sheet_region: SheetRegion,
 }
 
-const PLAYER: SheetRegion = SheetRegion::rect(296, 119, 25, 20);
+const PLAYER: SheetRegion = SheetRegion::rect(315, 100, 16, 16);
 
-const PLAYER2: SheetRegion = SheetRegion::rect(328, 151, 25, 20);
+const PLAYER2: SheetRegion = SheetRegion::rect(315, 100, 16, 16);
 
 const ENEMY: SheetRegion = SheetRegion::rect(533 + 16, 39, 16, 16);
 
@@ -133,7 +133,8 @@ struct Game {
     levels: Vec<Level>,
     entities: Vec<Entity>,
     bounce: Vec<usize>,
-    projectiles: Vec<Entity>,
+    p_projectiles: Vec<Entity>,
+    e_projectiles: Vec<Entity>,
     p1_attack_timer: f32,
     p2_attack_timer: f32,
     health: u8,
@@ -141,8 +142,8 @@ struct Game {
 
 // Feel free to change this if you use a different tilesheet
 const TILE_SZ: usize = 16;
-const W: usize = 240;
-const H: usize = 160;
+const W: usize = 320;
+const H: usize = 240;
 
 // pixels per second
 const PLAYER_SPEED: f32 = 64.0;
@@ -238,16 +239,15 @@ fn gather_level_contacts_2(objs: &Vec<Shape>, level: &Level) -> Vec<Contact2> {
 
     //edit tiles_within
     for (a_idx, a_shape) in objs.iter().enumerate() {
-
         match a_shape {
             Shape::Circle(circle) => {
                 let t_vec2 = circle.circ_to_pos();
-                
+
                 a_rect = Rect {
                     x: t_vec2.x,
                     y: t_vec2.y,
                     w: circle.r as u16 * 2,
-                    h: circle.r as u16 * 2
+                    h: circle.r as u16 * 2,
                 };
             }
             Shape::Rect(rect) => {
@@ -299,7 +299,7 @@ impl Game {
     }
 
     //todo! Separate projectiles from entities
-    fn projectile_level_response(&mut self, contacts: &mut Vec<Contact2>) {
+    fn projectile_level_response(&mut self, contacts: &mut Vec<Contact>) {
         for contact in contacts.iter_mut() {
             if contact.displacement.x < contact.displacement.y {
                 contact.displacement.y = 0.0;
@@ -307,18 +307,9 @@ impl Game {
                 contact.displacement.x = 0.0;
             }
 
-            let mut b_pos: Vec2;
+            let mut b_pos: Vec2 = contact.b_r.rect_to_pos();
 
-            match contact.b_r {
-                Shape::Rect(rect) => {
-                    b_pos = rect.rect_to_pos();
-                }
-                Shape::Circle(circle) => {
-                    b_pos = circle.origin();
-                }
-            }
-
-            if let Some(projectile) = self.projectiles.get_mut(contact.a_i) {
+            if let Some(projectile) = self.p_projectiles.get_mut(contact.a_i) {
                 let mut t_vec2 = dir_to_vec2(projectile.dir);
 
                 if projectile.pos.x < b_pos.x {
@@ -342,7 +333,7 @@ impl Game {
         }
     }
 
-    fn kill_player(&mut self, player_contacts: &mut Vec<Contact2>) {
+    fn kill_player(&mut self, player_contacts: &mut Vec<Contact>) {
         for contact in player_contacts.iter_mut() {
             if contact.b_i == 0 {
                 self.entities[0].alive = false;
@@ -356,7 +347,7 @@ impl Game {
 
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]
-    let source = assets_manager::source::FileSystem::new("fighter/content")
+    let source = assets_manager::source::FileSystem::new("adventure/content")
         .expect("Couldn't load resources");
     #[cfg(target_arch = "wasm32")]
     let source = assets_manager::source::Embedded::from(assets_manager::source::embed!("content"));
@@ -440,8 +431,8 @@ impl Game {
         );
         let levels = vec![Level::from_str(
             &cache
-                .load::<String>("level5")
-                .expect("Couldn't access level5.txt")
+                .load::<String>("level1")
+                .expect("Couldn't access level1.txt")
                 .read(),
         )];
         let current_level = 0;
@@ -492,7 +483,8 @@ impl Game {
                     dir: 0.0,
                 },
             ],
-            projectiles: Vec::new(),
+            p_projectiles: Vec::new(),
+            e_projectiles: Vec::new(),
         };
         game.enter_level(player_start, player2_start);
         game
@@ -534,7 +526,7 @@ impl Game {
             }
         }
 
-        for (p_i, projectile) in self.projectiles.iter().enumerate() {
+        for (p_i, projectile) in self.p_projectiles.iter().enumerate() {
             if projectile.alive {
                 frend.draw_sprite(0, projectile.transform(), projectile.uv());
             }
@@ -579,10 +571,11 @@ impl Game {
         self.entities[0].dir += d_angle;
         self.entities[1].dir += d_angle2;
 
-        if self.p1_attack_timer <= 0.0 && input.is_key_pressed(Key::Space) && self.entities[0].alive {
+        if self.p1_attack_timer <= 0.0 && input.is_key_pressed(Key::Space) && self.entities[0].alive
+        {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
-            self.projectiles.push(Entity {
+            self.p_projectiles.push(Entity {
                 alive: true,
 
                 // how to put the bullet at the top of the tank so it doesnt kill itself
@@ -596,10 +589,11 @@ impl Game {
             self.p1_attack_timer = ATTACK_MAX_TIME;
         }
 
-        if self.p2_attack_timer <= 0.0 && input.is_key_pressed(Key::KeyQ) && self.entities[1].alive{
+        if self.p2_attack_timer <= 0.0 && input.is_key_pressed(Key::KeyQ) && self.entities[1].alive
+        {
             // TODO POINT: compute the attack area's center based on the player's position and facing and some offset
             // For the spritesheet provided, the attack is placed 8px "forwards" from the player.
-            self.projectiles.push(Entity {
+            self.p_projectiles.push(Entity {
                 alive: true,
                 pos: self.entities[1].pos + dir_to_vec2(self.entities[1].dir) * 15.0,
                 dir: self.entities[1].dir,
@@ -643,28 +637,27 @@ impl Game {
             enemy.pos += dir_to_vec2(enemy.dir) * ENEMY_SPEED * DT;
         }
 
-        for projectile in self.projectiles.iter_mut() {
+        for projectile in self.p_projectiles.iter_mut() {
             projectile.pos += dir_to_vec2(projectile.dir);
         }
 
         //Collision Detection & Response:
         let player_rects: Vec<Rect> = self.entities.iter().map(|entity| entity.rect()).collect();
-        let player_shapes: Vec<Shape> = self.entities.iter().map(|entity| entity.shape_rect()).collect();
 
-        let projectile_circles: Vec<Shape> = self
-            .projectiles
+        let projectile_rect: Vec<Rect> = self
+            .p_projectiles
             .iter()
-            .map(|projectile| projectile.shape_circle())
+            .map(|projectile| projectile.rect())
             .collect();
 
         let mut player_level_contacts: Vec<Contact> =
             gather_level_contacts(&player_rects, self.level());
 
-        let mut projectile_player_contacts: Vec<Contact2> =
-            gather_contacts_2(&projectile_circles, &player_shapes);
+        let mut projectile_player_contacts: Vec<Contact> =
+            gather_contacts(&projectile_rect, &player_rects);
 
-        let mut projectile_level_contacts: Vec<Contact2> =
-            gather_level_contacts_2(&projectile_circles, self.level());
+        let mut projectile_level_contacts: Vec<Contact> =
+            gather_level_contacts(&projectile_rect, self.level());
 
         player_level_contacts.sort_by(|a, b| {
             b.displacement
