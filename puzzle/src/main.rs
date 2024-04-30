@@ -235,9 +235,6 @@ fn gather_slippery_level_contacts(objs: &Vec<Rect>, level: &Level) -> Vec<Contac
         for (b_idx, (b_rect, tile_data)) in level.tiles_within(*a_rect).enumerate() {
             if tile_data.slippery {
                 if let Some(overlap) = a_rect.overlap(b_rect) {
-                    //debug
-                    println!("ON ICE");
-
                     contacts.push(Contact {
                         a_i: a_idx,
                         a_r: *a_rect,
