@@ -440,8 +440,8 @@ impl Game {
         );
         let levels = vec![Level::from_str(
             &cache
-                .load::<String>("level3")
-                .expect("Couldn't access level3.txt")
+                .load::<String>("level5")
+                .expect("Couldn't access level5.txt")
                 .read(),
         )];
         let current_level = 0;
