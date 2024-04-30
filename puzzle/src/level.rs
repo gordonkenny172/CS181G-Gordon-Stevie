@@ -126,7 +126,11 @@ impl Level {
                             .to_lowercase();
                         assert!(flags == "o" || flags == "s", "The only valid flags are o(pen) or s(olid), but you could parse other kinds here in {line}");
                         // parse and check for slippery or not
-                        let property = chunks.next().expect("Couldn't get tile property in {line}").to_lowercase();
+                        let property = chunks
+                            .next()
+                            .expect("Couldn't get tile property in {line}")
+                            .to_lowercase();
+                        assert!(property == "n" || property == "s", "The only valid properties are n(one) or s(lippery), but you could parse other kinds here in {line}");
                         let x =
                             u16::from_str(chunks.next().expect("No sheet x in legend line {line}"))
                                 .expect("Couldn't parse sheet x as u16 in {line}");
