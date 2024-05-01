@@ -53,3 +53,7 @@ Finally, we used our adventure game as a template to then extract our engine. We
 # Conclusion and Takeaways
 
 We are happy with how our games turned out and like our progression of added complexity from game to game. We would have liked to organize our code a lot better since there are many inconsistencies between the codebases of our game which we would like to fix if we have the time.
+
+# Authors
+
+Gordon Kenny, Stevie Kim, Jenny Yuan
