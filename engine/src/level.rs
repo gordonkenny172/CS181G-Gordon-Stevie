@@ -125,6 +125,11 @@ impl Level {
                             .expect("Couldn't get tile flags in {line}")
                             .to_lowercase();
                         assert!(flags == "o" || flags == "s", "The only valid flags are o(pen) or s(olid), but you could parse other kinds here in {line}");
+                        let property = chunks
+                            .next()
+                            .expect("Couldn't get tile property in {line}")
+                            .to_lowercase();
+                        assert!(property == "n" || property == "s", "The only valid properties are n(one) or s(lippery), but you could parse other kinds here in {line}");
                         let x =
                             u16::from_str(chunks.next().expect("No sheet x in legend line {line}"))
                                 .expect("Couldn't parse sheet x as u16 in {line}");
@@ -140,6 +145,7 @@ impl Level {
                         let data = TileData {
                             solid: flags == "s",
                             sheet_region: SheetRegion::new(0, x, y, 16, w, h),
+                            slippery: property == "s",
                         };
                         legend.insert(sym.to_string(), (legend.len() as u8, data));
                     }

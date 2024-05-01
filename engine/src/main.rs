@@ -26,6 +26,7 @@ enum EntityType {
 struct TileData {
     solid: bool,
     sheet_region: SheetRegion,
+    slippery: bool,
 }
 
 // todo!("take out of engine");
@@ -149,12 +150,9 @@ const H: usize = 240;
 
 // label useful constants
 
-// const ROTATE_SPEED: f32 = 0.1;
-// const ENEMY_SPEED: f32 = 32.0;
-
-// const ATTACK_MAX_TIME: f32 = 0.3;
-// const ATTACK_COOLDOWN_TIME: f32 = 0.1;
-// const ENEMY_ATTACK_COOLDOWN_TIME: f32 = 10.0;
+const ROTATE_SPEED: f32 = 0.1;
+const ATTACK_COOLDOWN_TIME: f32 = 0.1;
+const ENEMY_ATTACK_COOLDOWN_TIME: f32 = 10.0;
 
 const DT: f32 = 1.0 / 60.0;
 
