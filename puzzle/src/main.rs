@@ -403,7 +403,7 @@ impl Game {
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]
     let source =
-        assets_manager::source::FileSystem::new("puzzle/content").expect("Couldn't load resources");
+        assets_manager::source::FileSystem::new("engine/content").expect("Couldn't load resources");
     #[cfg(target_arch = "wasm32")]
     let source = assets_manager::source::Embedded::from(assets_manager::source::embed!("content"));
     let cache = assets_manager::AssetCache::with_source(source);
