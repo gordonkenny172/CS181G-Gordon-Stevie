@@ -31,8 +31,26 @@ The main features we implemented in this game was:
 
 # Puzzle
 
-Our puzzle game was built on top of our fighter game and added an "icy tile" mechanic. We edited TileData by adding a "slippery" nboolean attribute. Then, in our level design we edited the levels and the parser to check for an additional parameter which would tell us whether or not that tile was slippery. Then, we added some collision detection and response code which checked if you were on a slippery tile and, if so, would force you to slide forward (you can still change direction while sliding). We didn't have enough time to create an actual puzzle and focused on implementing this slippery tile mechanic.
+Our puzzle game was built on top of our fighter game and added an "icy tile" mechanic. We edited TileData by adding a "slippery" boolean attribute. Then, in our level design we edited the levels and the parser to check for an additional parameter which would tell us whether or not that tile was slippery. Then, we added some collision detection and response code which checked if you were on a slippery tile and, if so, would force you to slide forward (you can still change direction while sliding). We didn't have enough time to create an actual puzzle and focused on implementing this slippery tile mechanic.
 
 # Adventure
 
+For our final game, we added to our fighter game and created a shooter game. Both players play as birds that need to maneuver around enemy projectiles and kill all three enemies on screen. The enemies will move randomly and shoot a bouncing projectile every 10 seconds. We added distinctions between player projectiles and enemy projectiles and prevented self-inflicted damage (which was a mechanic in our fighter game). However, to get collisions to work properly we needed to make large changes to our codebase.
+
+First, we needed to reorganize the way we stored our entities. In our previous games, we kept entities (as in players and enemies) seperate from projectiles. However, to get our shooting mechanics to work properly, we needed to separate players and enemies into different vecs (or rather this was the most straightforward fix). This was because if we kept players and enemies in the same entity vec, we would run into index issues when creating contacts. When creating player rectangles and enemy rectangles from the same entity vec, the indices would change and made it hard to correctly inflict damage (or have other collision interactions work properly) on the right entity. This resulted in a lot of redundant code but also allowed the behavior to work properly.
+
+We then had to add different collision functions for different types of entities. Since we stored players, enemies, player projectiles, and enemy projectiles in different vectors in our game state, we needed different collision functions that would correctly edit the values in each vec.
+
 # Engine
+
+Finally, we used our adventure game as a template to then extract our engine. We took out all of the individual game attributes and left the remaining infrastructure as our engine. This engine has support for the main features we wanted to implement, which are:
+
+* Local Two-Player Functionality
+* Bouncing Projectiles
+* Rotational Movement
+* Different Tile Attributes
+
+# Conclusion and Takeaways
+
+
+
