@@ -31,6 +31,8 @@ The main features we implemented in this game was:
 
 # Puzzle
 
+Our puzzle game was built on top of our fighter game and added an "icy tile" mechanic. We edited TileData by adding a "slippery" nboolean attribute. Then, in our level design we edited the levels and the parser to check for an additional parameter which would tell us whether or not that tile was slippery. Then, we added some collision detection and response code which checked if you were on a slippery tile and, if so, would force you to slide forward (you can still change direction while sliding). We didn't have enough time to create an actual puzzle and focused on implementing this slippery tile mechanic.
+
 # Adventure
 
 # Engine
